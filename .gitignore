@@ -1,8 +1,8 @@
 ### SBOM ###
 
-artifacts/
-results/
-tmp/
+artesca/artifacts/
+artesca/results/
+artesca/tmp/
 package-lock.json
 package.json
 
