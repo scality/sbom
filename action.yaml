@@ -5,7 +5,7 @@ inputs:
   version:
     required: true
     type: string
-  artifacts_url:
+  # Add additional required inputs
     
 runs:
   using: 'docker'
