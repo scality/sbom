@@ -12,4 +12,3 @@ runs:
   image: 'Dockerfile'
   args:
     - ${{ inputs.version }}
-    - ${{ inputs.artifacts_url }}
