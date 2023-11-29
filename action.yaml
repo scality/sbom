@@ -1,0 +1,15 @@
+# action.yml
+name: 'sbom'
+description: 'Greet someone and record the time'
+inputs:
+  version:
+    required: true
+    type: string
+  artifacts_url:
+    
+runs:
+  using: 'docker'
+  image: 'Dockerfile'
+  args:
+    - ${{ inputs.version }}
+    - ${{ inputs.artifacts_url }}
