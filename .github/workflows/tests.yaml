@@ -13,6 +13,3 @@ jobs:
       - uses: ./
         with:
           version: '1.0.0'
-
-
-    
