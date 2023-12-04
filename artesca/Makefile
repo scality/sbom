@@ -33,17 +33,17 @@ create_results_dir:
 	@mkdir -p $(RESULTS_DIR)
 
 download_artifacts: create_artifacts_dir
-	# @read -p "Enter username for packages.scality.com: " username; \
-	# read -s -p "Enter password for packages.scality.com: " password; \
-	# printf "\n"; \
-	# for artifact in $(ARTIFACTS_ARTESCA_LIST); do \
-	# 	echo "Downloading artifact : $$artifact"; \
-	# 	curl -s -Lo $(ARTIFACTS_DOWNLOAD_DIR)/$$artifact ${ARTIFACTS_URL}/$$artifact -u "$$username:$$password"; \
-	# done; \
-	# echo "Downloading artifact : $(ARTIFACTS_ARTESCA_OS)"; \
-	# curl -s -Lo $(ARTIFACTS_DOWNLOAD_DIR)/${ARTIFACTS_ARTESCA_OS} ${ARTIFACTS_OS_URL}/${ARTIFACTS_ARTESCA_OS} -u "$$username:$$password"; \
-	# echo "Downloading sumfile for $(ARTIFACTS_ARTESCA_OS)"; \
-	# curl -s -Lo $(ARTIFACTS_DOWNLOAD_DIR)/${SUMFILE_ARTESCA_OS} ${ARTIFACTS_OS_URL}/${SUMFILE_ARTESCA_OS} -u "$$username:$$password"; \
+	@read -p "Enter username for packages.scality.com: " username; \
+	read -s -p "Enter password for packages.scality.com: " password; \
+	printf "\n"; \
+	for artifact in $(ARTIFACTS_ARTESCA_LIST); do \
+		echo "Downloading artifact : $$artifact"; \
+		curl -s -Lo $(ARTIFACTS_DOWNLOAD_DIR)/$$artifact ${ARTIFACTS_URL}/$$artifact -u "$$username:$$password"; \
+	done; \
+	echo "Downloading artifact : $(ARTIFACTS_ARTESCA_OS)"; \
+	curl -s -Lo $(ARTIFACTS_DOWNLOAD_DIR)/${ARTIFACTS_ARTESCA_OS} ${ARTIFACTS_OS_URL}/${ARTIFACTS_ARTESCA_OS} -u "$$username:$$password"; \
+	echo "Downloading sumfile for $(ARTIFACTS_ARTESCA_OS)"; \
+	curl -s -Lo $(ARTIFACTS_DOWNLOAD_DIR)/${SUMFILE_ARTESCA_OS} ${ARTIFACTS_OS_URL}/${SUMFILE_ARTESCA_OS} -u "$$username:$$password"; \
 	echo "Downloading repo : $(GITHUB_REPO_ARTESCA)"; \
 	git clone git@github.com:scality/$(GITHUB_REPO_ARTESCA).git $(REPO_DOWNLOAD_DIR)/$(GITHUB_REPO_ARTESCA) --branch $(ARTESCA_VERSION) ; \
 	echo "Downloading repo : $(GITHUB_REPO_METALK8S)"; \
