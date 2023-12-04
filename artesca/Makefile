@@ -11,6 +11,7 @@ SUMFILE_ARTESCA_OS := artesca-os.iso.sha256sum
 SUMFILE_ARTESCA_INSTALLER := SHA256SUM
 GITHUB_REPO_ARTESCA := artesca
 GITHUB_REPO_METALK8S := metalk8s
+GITHUB_REPO_FULL_LIST := ${GITHUB_REPO_ARTESCA} ${GITHUB_REPO_METALK8S}
 IMAGE_SYFT := sbom_syft
 IMAGE_SKOPEO := sbom_skopeo
 IMAGE_TRIVY := sbom_trivy
@@ -101,7 +102,7 @@ scan_artesca: create_results_dir generate_image mount_iso
 		echo "Scanning ISO $$artifact_name"; \
 		docker run --rm -v $(PWD)/$(ARTIFACTS_MOUNT_DIR)/$$artifact_name:/artifacts $(IMAGE_SYFT) -o cyclonedx-json /artifacts > $(RESULTS_DIR)/iso_$$artifact_name.json; \
 	done; \
-	for repo in $(GITHUB_REPO_ARTESCA_LIST); do \
+	for repo in $(GITHUB_REPO_FULL_LIST); do \
 		echo "Scanning $$repo"; \
 		for package_path in `find $(REPO_DOWNLOAD_DIR)/$$repo -name package-lock.json`; do \
 			package_directory=$$(dirname $$package_path); \
