@@ -15,6 +15,7 @@ GITHUB_REPO_FULL_LIST := ${GITHUB_REPO_ARTESCA} ${GITHUB_REPO_METALK8S}
 IMAGE_SYFT := sbom_syft
 IMAGE_SKOPEO := sbom_skopeo
 IMAGE_TRIVY := sbom_trivy
+IMAGE_GRYPE := sbom_grype
 ARTIFACTS_DOWNLOAD_DIR := artifacts
 REPO_DOWNLOAD_DIR := $(ARTIFACTS_DOWNLOAD_DIR)/repo
 ARTIFACTS_MOUNT_DIR := $(ARTIFACTS_DOWNLOAD_DIR)/mnt
@@ -23,7 +24,8 @@ RESULTS_DIR := results/artesca
 
 .PHONY: download_artifacts create_artifacts_dir create_results_dir
 
-all: download_artifacts scan_image scan_artesca clean
+all: scan_vuln
+sbom: scan_artesca
 
 create_artifacts_dir:
 	@echo "Create artifacts directory"
@@ -52,7 +54,7 @@ download_artifacts: create_artifacts_dir
 	echo "Check download integrity"; \
 	cd $(ARTIFACTS_DOWNLOAD_DIR) && sha256sum -c ${SUMFILE_ARTESCA_OS}; \
 
-mount_iso:
+mount_iso: download_artifacts
 	@for artifact in $(ARTIFACTS_FULL_LIST); do \
 		artifact_name=$$(basename $$artifact .iso); \
 		mkdir -p $(ARTIFACTS_MOUNT_DIR)/$$artifact_name; \
@@ -82,8 +84,9 @@ generate_image:
 	@docker build -t $(IMAGE_SYFT) . -f ../dockerfiles/syft/Dockerfile
 	@docker build -t $(IMAGE_SKOPEO) . -f ../dockerfiles/skopeo/Dockerfile
 	@docker build -t $(IMAGE_TRIVY) . -f ../dockerfiles/trivy/Dockerfile
+	@docker build -t $(IMAGE_GRYPE) . -f ../dockerfiles/grype/Dockerfile
 
-scan_image: create_results_dir generate_image mount_iso
+scan_image: generate_image mount_iso
 	@for image_dir in `find $(ARTIFACTS_MOUNT_DIR) -name images -type d`; do \
 		for dir in `find $$image_dir -mindepth 2 -maxdepth 2 -type d`; do \
 			image_name=$$(echo $$dir | awk -F "/" '{print $$(NF-1)}'); \
@@ -96,7 +99,7 @@ scan_image: create_results_dir generate_image mount_iso
 		done; \
 	done; \
 
-scan_artesca: create_results_dir generate_image mount_iso
+scan_artesca: create_results_dir generate_image mount_iso scan_image
 	@for artifact_path in `find $(ARTIFACTS_MOUNT_DIR) -mindepth 1 -maxdepth 1 -type d`; do \
 		artifact_name=`basename $$artifact_path`; \
 		echo "Scanning ISO $$artifact_name"; \
@@ -122,6 +125,15 @@ scan_artesca: create_results_dir generate_image mount_iso
 			echo "Scanning $$package_name" found in $$package_directory; \
 			docker run --rm -v $(PWD)/$$package_directory:/artifacts $(IMAGE_SYFT) -o cyclonedx-json /artifacts/requirements.txt > $(RESULTS_DIR)/repo_$$repo\_python_$$package_name.json; \
 		done; \
+	done; \
+
+scan_vuln: scan_artesca
+	@echo "Scannig vulnerabilities from results"
+	@for result in `find $(RESULTS_DIR) -name "*.json"`; do \
+		result_directory=$$(dirname $$result); \
+		sbom_name=$$(echo $$result | awk -F "/" '{print $$(NF)}'); \
+		echo "Scanning $$sbom_name"; \
+		docker run --rm -v $(PWD)/$$result_directory:/results $(IMAGE_GRYPE) -o cyclonedx-json sbom:/results/$$sbom_name > $(RESULTS_DIR)/vuln_$$sbom_name; \
 	done; \
 
 clean: umount_iso
