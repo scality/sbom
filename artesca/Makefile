@@ -1,6 +1,5 @@
 SHELL := /bin/bash
-ARTESCA_VERSION := "2.1.2"
-METALK8S_VERSION := "126.0.2"
+ARTESCA_VERSION := "2.1.0"
 ARTESCA_DOWNLOAD_BASE_URL := https://packages.scality.com/Artesca
 ARTIFACTS_URL := ${ARTESCA_DOWNLOAD_BASE_URL}/${ARTESCA_VERSION}/artifacts
 ARTIFACTS_OS_URL := ${ARTESCA_DOWNLOAD_BASE_URL}/${ARTESCA_VERSION}/os
@@ -46,10 +45,11 @@ download_artifacts: create_artifacts_dir
 	curl -s -Lo $(ARTIFACTS_DOWNLOAD_DIR)/${ARTIFACTS_ARTESCA_OS} ${ARTIFACTS_OS_URL}/${ARTIFACTS_ARTESCA_OS} -u "$$username:$$password"; \
 	echo "Downloading sumfile for $(ARTIFACTS_ARTESCA_OS)"; \
 	curl -s -Lo $(ARTIFACTS_DOWNLOAD_DIR)/${SUMFILE_ARTESCA_OS} ${ARTIFACTS_OS_URL}/${SUMFILE_ARTESCA_OS} -u "$$username:$$password"; \
-	echo "Downloading repo : $(GITHUB_REPO_ARTESCA)"; \
+	echo "Downloading repo : $(GITHUB_REPO_ARTESCA), version $(ARTESCA_VERSION)"; \
 	git clone git@github.com:scality/$(GITHUB_REPO_ARTESCA).git $(REPO_DOWNLOAD_DIR)/$(GITHUB_REPO_ARTESCA) --branch $(ARTESCA_VERSION) ; \
-	echo "Downloading repo : $(GITHUB_REPO_METALK8S)"; \
-	git clone git@github.com:scality/$(GITHUB_REPO_METALK8S).git $(REPO_DOWNLOAD_DIR)/$(GITHUB_REPO_METALK8S) --branch $(METALK8S_VERSION) ; \
+	export METALK8S_VERSION=`grep METALK8S_VERSION $(REPO_DOWNLOAD_DIR)/$(GITHUB_REPO_ARTESCA)/PROJECTS_VERSIONS | cut -d '=' -f2` ; \
+	echo "Downloading repo : $(GITHUB_REPO_METALK8S), version $$METALK8S_VERSION" ; \
+	git clone git@github.com:scality/$(GITHUB_REPO_METALK8S).git $(REPO_DOWNLOAD_DIR)/$(GITHUB_REPO_METALK8S) --branch $$METALK8S_VERSION ; \
 	echo "Check download integrity"; \
 	cd $(ARTIFACTS_DOWNLOAD_DIR) && sha256sum -c ${SUMFILE_ARTESCA_OS}; \
 
