@@ -93,7 +93,7 @@ scan_image: generate_image mount_iso
 			echo "Converting $$image_name $$image_version from $$image_source"; \
 			docker run --rm -v $(PWD)/$$dir:/imported_image -v $(PWD)/$(IMAGES_EXPORT_DIR):/exported_image $(IMAGE_SKOPEO) copy --format v2s2 dir://imported_image oci:/exported_image/$$image_source\_$$image_name\_$$image_version; \
 			echo "Scanning $$image_name $$image_version from $$image_source"; \
-			docker run --rm -v $(PWD)/$(IMAGES_EXPORT_DIR):/images $(IMAGE_TRIVY) image --input /images/$$image_source\_$$image_name\_$$image_version -f json > $(RESULTS_DIR)/image_$$image_source\_$$image_name\_$$image_version.json; \
+			docker run --rm -v $(PWD)/$(IMAGES_EXPORT_DIR):/images $(IMAGE_TRIVY) image --input /images/$$image_source\_$$image_name\_$$image_version --format cyclonedx > $(RESULTS_DIR)/image_$$image_source\_$$image_name\_$$image_version.json; \
 		done; \
 	done; \
 
