@@ -24,8 +24,7 @@ RESULTS_DIR := results/artesca
 
 .PHONY: download_artifacts create_artifacts_dir create_results_dir
 
-all: scan_vuln
-sbom: scan_artesca
+all: scan_artesca
 
 create_artifacts_dir:
 	@echo "Create artifacts directory"
@@ -84,7 +83,6 @@ generate_image:
 	@docker build -t $(IMAGE_SYFT) . -f ../dockerfiles/syft/Dockerfile
 	@docker build -t $(IMAGE_SKOPEO) . -f ../dockerfiles/skopeo/Dockerfile
 	@docker build -t $(IMAGE_TRIVY) . -f ../dockerfiles/trivy/Dockerfile
-	@docker build -t $(IMAGE_GRYPE) . -f ../dockerfiles/grype/Dockerfile
 
 scan_image: generate_image mount_iso
 	@for image_dir in `find $(ARTIFACTS_MOUNT_DIR) -name images -type d`; do \
@@ -127,14 +125,6 @@ scan_artesca: create_results_dir generate_image mount_iso scan_image
 		done; \
 	done; \
 
-scan_vuln: scan_artesca
-	@echo "Scannig vulnerabilities from results"
-	@for result in `find $(RESULTS_DIR) -name "*.json"`; do \
-		result_directory=$$(dirname $$result); \
-		sbom_name=$$(echo $$result | awk -F "/" '{print $$(NF)}'); \
-		echo "Scanning $$sbom_name"; \
-		docker run --rm -v $(PWD)/$$result_directory:/results $(IMAGE_GRYPE) -o cyclonedx-json sbom:/results/$$sbom_name > $(RESULTS_DIR)/vuln_$$sbom_name; \
-	done; \
 
 clean: umount_iso
 	if [ $$(id -u) -ne 0 ]; then \
