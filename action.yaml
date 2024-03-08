@@ -1,0 +1,179 @@
+name: "Generate sbom"
+description: "Generate sbom from artifacts"
+
+inputs:
+  ref:
+    description: "the git revision to checkout"
+    default: ${{ github.sha }}
+    required: false
+    type: string
+  ARTIFACTS_USER:
+    description: "username to get artifacts"
+    required: true
+  ARTIFACTS_PASSWORD:
+    description: "password to get artifacts"
+    required: true
+  ARTIFACTS_URL:
+    description: Artifacts url
+    required: false
+    default: ''
+
+runs:
+  using: "composite"
+  steps:
+    - uses: actions/setup-python@v5
+      name: Install Python 3
+      with:
+        python-version: "3.10"
+
+    - name: Install deps
+      run: |
+        export DEBIAN_FRONTEND=noninteractive && \
+        sudo apt-get update && \
+        sudo apt-get install --no-install-recommends -y \
+        p7zip-full \
+        python3-pip \
+        python3-distutils
+
+    - name: Install skopeo
+      uses: ./.github/action/install-skopeo
+
+    - name: Install syft
+      uses: ./.github/action/install-syft
+
+    - name: Install trivy
+      uses: ./.github/action/install-trivy
+
+    - name: "get artifact link"
+      uses: scality/action-artifacts@v4
+      id: artifacts
+      if: inputs.ARTIFACTS_URL == ''
+      with:
+        method: setup
+        url: https://artifacts.scality.net
+        user: ${{ inputs.ARTIFACTS_USER }}
+        password: ${{ inputs.ARTIFACTS_PASSWORD }}
+
+    - name: "Create directories"
+      run: |
+        mkdir -p $PWD/artesca/iso
+        mkdir -p $PWD/artesca/extracted
+        mkdir -p $PWD/artesca/images
+        mkdir -p $PWD/artesca/repo
+        mkdir -p $PWD/artesca/sbom
+
+    - name: Checkout Artesca repo
+      uses: actions/checkout@v4
+      with:
+        ref: ${{inputs.ref}}
+        path: artesca/repo
+
+    - name: Get metalk8s version
+      run: |
+        cd artesca/repo
+        METALK8S_VERSION=$(grep METALK8S repo/artesca/PROJECTS_VERSIONS | cut -d '=' -f2)
+        echo "METALK8S_VERSION=$METALK8S_VERSION" >> $GITHUB_ENV
+
+    - name: Checkout metalk8s repo
+      uses: actions/checkout@v4
+      with:
+        repository: scality/metalk8s
+        path: artesca/repo
+        ref: ${{env.METALK8S_VERSION}}
+
+    - name: "Donwload and extract artifacts"
+      env:
+        ARTIFACTS_ARTESCA_LIST: artesca-base.iso artesca-base-repo.iso metalk8s.iso xcore.iso zenko-base.iso zenko.iso
+        ARTIFACTS_ARTESCA_OS: artesca-os.iso
+        ARTIFACTS_FULL_LIST: $ARTIFACTS_ARTESCA_LIST $ARTIFACTS_ARTESCA_OS
+        ARTIFACTS_URL: ${{inputs.ARTIFACTS_URL || steps.artifacts.outputs.link}}
+        ARTIFACTS_USER: ${{inputs.ARTIFACTS_USER}}
+        ARTIFACTS_PASSWORD: ${{inputs.ARTIFACTS_PASSWORD}}
+      run: |
+        IFS=' ' # Set IFS to space
+        for artifact in $ARTIFACTS_ARTESCA_LIST; do \
+            echo "Downloading artifact : $artifact"; \
+            curl -sSfL -o $PWD/artesca/iso/$artifact -u $ARTIFACTS_USER:$ARTIFACTS_PASSWORD $ARTIFACTS_URL/projects/$artifact; \
+        done; \
+        for artifact in $ARTIFACTS_ARTESCA_OS; do \
+            echo "Downloading artifact : $artifact"; \
+            curl -sSfL -o $PWD/artesca/iso/$artifact -u $ARTIFACTS_USER:$ARTIFACTS_PASSWORD $ARTIFACTS_URL/os/$artifact; \
+        done; \
+        for artifact in $ARTIFACTS_FULL_LIST; do \
+            mkdir -p $PWD/artesca/extracted/$artifact; \
+            echo "Extracting ISO : $artifact"; \
+            7z x $PWD/artesca/iso/$artifact -o$PWD/artesca/extracted/$artifact; \
+            rm -f $PWD/artesca/iso/$artifact; \
+        done
+
+    - name: "Generate sbom for container images"
+      run: |
+        for image_dir in `find artesca/extracted/ -name images -type d`; do \
+            for dir in `find $image_dir -mindepth 2 -maxdepth 2 -type d`; do \
+            image_name=`echo $dir | awk -F "/" '{print $(NF-1)}'`; \
+            image_version=`echo $dir | awk -F "/" '{print $(NF)}'`; \
+            image_source=`echo $dir | awk -F "/" '{print $(NF-3)}'`; \
+            echo "Converting $image_name $image_version from $image_source"; \
+            skopeo copy --format v2s2 dir://$PWD/$dir oci:$PWD/artesca/images/$image_source\_$image_name\_$image_version; \
+            echo "Scanning $image_name $image_version from $image_source"; \
+            trivy image --input $PWD/artesca/images/$image_source\_$image_name\_$image_version --format cyclonedx > $PWD/artesca/sbom/image_$image_source\_$image_name\_$image_version.json; \
+            done; \
+        done
+
+    - name: "Generate sbom for artifacts"
+      run: |
+        for artifact_path in `find $PWD/artesca/extracted -mindepth 1 -maxdepth 1 -type d`; do \
+            artifact_name=`basename $artifact_path`; \
+            echo "Scanning ISO $artifact_name"; \
+            syft -o cyclonedx-json $artifact_path > $PWD/artesca/sbom/iso_$artifact_name.json; \
+        done
+
+    - name: "Generate sbom for repo"
+      run: |
+        for repo in `find $PWD/artesca/repo -mindepth 1 -maxdepth 1 -type d`; do \
+            repo_name=`basename $repo`; \
+            echo "Scanning repo : $repo_name"; \
+            for package_path in `find $repo -name package-lock.json`; do \
+                echo "Scanning $package_path in repo : $repo_name"; \
+                echo "Pakage path : $package_path"; \
+                package_directory=`dirname $package_path |sed 's/\.//g' | sed "s|$repo/||" | sed 's/\//_/g'`; \
+                echo "Package directory : $package_directory"; \
+                package_name=`cat $package_path | sed -n '2 p' | awk -F "\"" '{print $4}' | sed 's/\//-/g'`; \
+                echo "Scanning $package_name found in $package_directory"; \
+                syft -o cyclonedx-json $package_path > $PWD/artesca/sbom/repo_$repo_name\_npm_$package_directory\_$package_name.json; \
+            done; \
+            for package_path in `find $repo -name go.mod`; do \
+                echo "Scanning $package_path in repo : $repo_name"; \
+                echo "Pakage path : $package_path"; \
+                package_directory=`dirname $package_path |sed 's/\.//g' | sed "s|$repo/||" | sed 's/\//_/g' `; \
+                echo "Package directory : $package_directory"; \
+                package_name=`cat $package_path | sed -n '2 p' | awk -F "\"" '{print $4}' | sed 's/\//-/g'`; \
+                echo "Scanning $package_name found in $package_directory"; \
+                syft -o cyclonedx-json $package_path > $PWD/artesca/sbom/repo_$repo_name\_go_$package_directory\_$package_name.json; \
+            done; \
+            for package_path in `find $repo -name requirements.txt`; do \
+                echo "Scanning $package_path in repo : $repo_name"; \
+                echo "Pakage path : $package_path"; \
+                package_directory=`dirname $package_path |sed 's/\.//g' | sed "s|$repo/||" | sed 's/\//_/g' `; \
+                echo "Package directory : $package_directory"; \
+                package_name=`cat $package_path | sed -n '2 p' | awk -F "\"" '{print $4}' | sed 's/\//-/g'`; \
+                echo "Scanning $package_name found in $package_directory"; \
+                syft -o cyclonedx-json $package_path > $PWD/artesca/sbom/repo_$repo_name\_python_$package_directory\_$package_name.json; \
+            done; \
+        done
+
+    - name: Clean up
+      run: |
+        rm -rf $PWD/artesca/extracted
+        rm -rf $PWD/artesca/images
+        rm -rf $PWD/artesca/iso
+        rm -rf $PWD/artesca/repo
+
+    - name: Upload SBOM to artifacts
+      uses: scality/action-artifacts@v4
+      with:
+        method: upload
+        url: https://artifacts.scality.net
+        user: ${{ secrets.ARTIFACTS_USER }}
+        password: ${{ secrets.ARTIFACTS_PASSWORD }}
+        source: $PWD/artesca/
