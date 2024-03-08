@@ -8,6 +8,7 @@ During the artesca scan, we use 25GB of storage.
 
 @m4nch0t:
 - finish action.yml
+- npm create different reuslt files foer dev package lock
 - possibility to scan component with version (ex: artesca 2.1.0 need ZENKO_VERSION=2.8.13, so clone all zenko repos for this version)
 - improve scan time with updated trivy db in image
 - errors with skopeo:
