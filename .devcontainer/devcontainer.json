@@ -3,7 +3,6 @@
   "build": {
     "dockerfile": "Dockerfile"
   },
-  "runArgs": ["--privileged"],
   "features": {
     "ghcr.io/devcontainers/features/sshd:1": {}
   },
