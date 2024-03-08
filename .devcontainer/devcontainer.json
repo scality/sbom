@@ -4,12 +4,12 @@
     "dockerfile": "Dockerfile"
   },
   "features": {
+    "ghcr.io/devcontainers/features/github-cli:1": {},
     "ghcr.io/devcontainers/features/sshd:1": {}
   },
   "customizations": {
     "vscode": {
       "extensions": [
-        "wholroyd.jinja",
         "cucumberopen.cucumber-official",
         "github.vscode-github-actions",
         "GitHub.copilot",
