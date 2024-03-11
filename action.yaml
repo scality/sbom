@@ -36,13 +36,13 @@ runs:
         python3-distutils
 
     - name: Install skopeo
-      uses: ./.github/action/install-skopeo
+      uses: ${{ github.action_path }}/.github/action/install-skopeo
 
     - name: Install syft
-      uses: ./.github/action/install-syft
+      uses: ${{ github.action_path }}/.github/action/install-syft
 
     - name: Install trivy
-      uses: ./.github/action/install-trivy
+      uses: ${{ github.action_path }}/.github/action/install-trivy
 
     - name: "get artifact link"
       uses: scality/action-artifacts@v4
