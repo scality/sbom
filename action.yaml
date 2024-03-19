@@ -1,0 +1,48 @@
+name: "Generate sbom"
+description: "Generate sbom from git repositories"
+
+inputs:
+  repo:
+    description: "repository to scan"
+    default: ${{ github.repository }}
+    required: false
+  input_path:
+    description: "path to the repository"
+    required: true
+  output_path:
+    description: "path to store the sbom"
+    required: true
+
+runs:
+  using: "composite"
+  steps:
+
+    - name: Install deps
+      shell: bash
+      run: |
+        export DEBIAN_FRONTEND=noninteractive && \
+        sudo apt-get update && \
+        sudo apt-get install --no-install-recommends -y \
+        git
+
+    - name: Install syft
+      shell: bash
+      run: |
+        export DEBIAN_FRONTEND=noninteractive && \
+        curl -O -sSfL https://raw.githubusercontent.com/anchore/syft/main/install.sh && \
+        sudo sh install.sh -b /usr/local/bin
+
+    - name: Generate sbom for python
+      shell: bash
+      run: |
+        syft --select-catalogers "python" -o cyclonedx-json=${{ inputs.output_path }}/repo_${{ inputs.repo }}\_python.json ${{ inputs.input_path }}
+
+    - name: Generate sbom for javascript
+      shell: bash
+      run: |
+        syft --select-catalogers "javascript" -o cyclonedx-json=${{ inputs.output_path }}/repo_${{ inputs.repo }}\_javascript.json ${{ inputs.input_path }}
+
+    - name: Generate sbom for go
+      shell: bash
+      run: |
+        syft --select-catalogers "go" -o cyclonedx-json=${{ inputs.output_path }}/repo_${{ inputs.repo }}\_go.json ${{ inputs.input_path }}
