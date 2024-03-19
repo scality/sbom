@@ -21,6 +21,7 @@ RUN export DEBIAN_FRONTEND=noninteractive && \
         gnupg lsb-release \
         isomd5sum \
         make \
+        p7zip-full \
         skopeo \
         tmux \
         trivy \

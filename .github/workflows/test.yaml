@@ -1,0 +1,50 @@
+name: "action-test"
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: "the git revision to checkout"
+        required: false
+      repo:
+        description: "repository to scan"
+        required: false
+      input_path:
+        description: "path to the repository"
+        default: "."
+        required: false
+      output_path:
+        description: "path to store the sbom"
+        default: "."
+        required: false
+
+jobs:
+
+  test-as-action: # make sure the action works on a clean machine
+    runs-on: ubuntu-22.04
+    steps:
+
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          path: ./
+
+      - name: Install syft
+        shell: bash
+        run: |
+          export DEBIAN_FRONTEND=noninteractive && \
+          curl -O -sSfL https://raw.githubusercontent.com/anchore/syft/main/install.sh && \
+          sudo sh install.sh -b /usr/local/bin
+
+      - name: Run syft
+        uses: ./
+        with:
+          repo: sbom-test
+          input_path: ./tests
+          output_path: .
+
+      - name: Print the command used to scan
+        run: |
+          tree -a
+          cat repo_*.json
