@@ -46,3 +46,8 @@ runs:
       shell: bash
       run: |
         syft --select-catalogers "go" -o cyclonedx-json=${{ inputs.output_path }}/repo_${{ inputs.repo }}\_go.json ${{ inputs.input_path }}
+
+    - name: Generate sbom for github actions
+      shell: bash
+      run: |
+        syft --select-catalogers "github-actions" -o cyclonedx-json=${{ inputs.output_path }}/repo_${{ inputs.repo }}\_github-actions.json ${{ inputs.input_path }}/.github/
