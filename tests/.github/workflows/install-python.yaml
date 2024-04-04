@@ -1,0 +1,23 @@
+name: "Install Python"
+
+on:
+  workflow_call:
+    inputs:
+      ref:
+        description: "the git revision to checkout"
+        default: ${{ github.sha }}
+        required: false
+        type: string
+
+jobs:
+  build-images:
+    runs-on: [ "aws", "suse"]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{inputs.ref}}
+      - uses: actions/setup-python@v5
+        name: Install Python 3
+        with:
+          python-version: "3.10"

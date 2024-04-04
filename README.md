@@ -9,6 +9,7 @@ Actually, only those languages are supported:
 - python
 - go
 - javascript
+- github-actions
 
 If you need to add more syft cataloger, please open an issue.
 

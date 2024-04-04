@@ -46,4 +46,7 @@ jobs:
 
       - name: Print the content of generated sbom file
         run: |
-          cat repo_*.json
+          for sbom in repo_*.json; do
+            echo "Content of $sbom"
+            cat $sbom
+          done
