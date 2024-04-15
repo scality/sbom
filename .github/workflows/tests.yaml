@@ -43,10 +43,15 @@ jobs:
           repo: sbom-test
           input_path: ./tests
           output_path: .
+          generate_vulnerability_report: "true"
 
       - name: Print the content of generated sbom file
         run: |
           for sbom in repo_*.json; do
             echo "Content of $sbom"
+            cat $sbom
+          done
+          for sbom in repo_*.html; do
+            echo "Content of vulnerability result for SBOM: $sbom"
             cat $sbom
           done

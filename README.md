@@ -40,3 +40,8 @@ with:
   repo: 'your-repo-to-scan'
   input_path: 'path-to-your-repo'
   output_path: 'path-to-store-sbom'
+```
+
+## References
+
+HTML template for **Grype** results visualisation was slightly modified from [Grype Contrib](https://github.com/opt-nc/grype-contribs).

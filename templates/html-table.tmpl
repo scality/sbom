@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1" charset="UTF-8">
+  <title>Grype analysis</title>
+  <script>
+    function myFunction() {
+      // Declare variables 
+      var input, filter, table, tr, td, i;
+      input = document.getElementById("myInput");
+      filter = input.value.toUpperCase();
+      table = document.getElementById("myTable");
+      tr = table.getElementsByTagName("tr");
+
+      // Loop through all table rows, and hide those who do not match the search query
+      for (i = 1; i < tr.length; i++) {
+        td = tr[i].getElementsByTagName("td");
+        for (j = 0; j < td.length; j++) {
+          var tdata = td[j];
+          if (tdata) {
+            if (tdata.innerHTML.toUpperCase().indexOf(filter) > -1) {
+              tr[i].style.display = "";
+              break;
+            } else {
+              tr[i].style.display = "none";
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <style type="text/css">
+    table,
+    th,
+    td {
+      border: 1px solid black; // changing-colors
+      // word-wrap: break-word;
+    }
+
+    tr:first-child {
+      font-weight: bold;
+    }
+
+    tr:nth-child(even) {
+      background: #eef
+    }
+
+    // changing-colors
+    tr:nth-child(odd) {
+      background: #fee
+    }
+
+    // changing-colors
+
+    * {
+      box-sizing: border-box;
+    }
+
+    #myInput {
+      background-image: url("search.png");
+      background-position: left center;
+      background-repeat: no-repeat;
+      width: 94%;
+      font-size: 16px;
+      padding: 8px 20px 8px 40px;
+      border: 2px solid #ddd; // changing-colors
+      margin-bottom: 18px;
+    }
+
+    #myTable {
+      border-collapse: collapse;
+      border: 1px solid #ddd; // changing-colors
+      width: 100%;
+      margin-top: 18px;
+      // Remove the // in front of the below two lines, to get fixed-width
+      // table-layout: fixed;
+      // word-wrap: break-word;
+      // font-size: 18px;
+    }
+
+    #myTable th,
+    #myTable td {
+      text-align: left;
+      padding: 12px;
+    }
+
+    #myTable tr {
+      border-bottom: 1px solid #ddd; // changing-colors
+    }
+
+    #myTable tr:first-child:hover,
+    #myTable tr:hover {
+      background-color: rgb(4, 112, 155); // changing-colors
+    }
+
+    #myTable tr:first-child {
+      background-color: rgb(4, 112, 155); // changing-colors
+      font-weight: bold;
+    }
+  </style>
+</head>
+
+<body>
+  <h2 style="text-align:center;background-color:rgb(4, 112, 155);color:White;">Identified vulnerabilities</h2>
+
+  <p><b>{{.Descriptor.Timestamp}} : {{.Source.Type}} &gt;&nbsp;
+      {{- if eq (.Source.Type) "image" -}} {{.Source.Target.UserInput}}
+      {{- else if eq (.Source.Type) "directory" -}} {{.Source.Target}}
+      {{- else if eq (.Source.Type) "file" -}} {{.Source.Target}}
+      {{- else -}} unknown
+      {{- end -}}
+  </b></p>
+
+  <input type="text" id="myInput" onkeyup="myFunction()" placeholder="Filter..."
+    title="" autofocus="autofocus">
+  <table id="myTable">
+    <tr>
+      <th>NAME</th>
+      <th>INSTALLED</th>
+      <th>TYPE</th>
+      <th>PATH</th>
+      <th>VULNERABILITY</th>
+      <th>SEVERITY</th>
+      <th>DESCRIPTION</th>
+      <th>STATE</th>
+      <th>FIXED IN</th>
+    </tr>
+
+{{- range .Matches}}
+    <tr>
+      <td>{{.Artifact.Name}}</td>
+      <td>{{.Artifact.Version}}</td>
+      <td>{{.Artifact.Type}}</td>
+      <td>{{(index .Artifact.Locations 0).RealPath}}</td>
+      <td>
+      {{- if eq (printf "%.4s" .Vulnerability.ID) "CVE-" -}}
+        <a href="https://nvd.nist.gov/vuln/detail/{{.Vulnerability.ID}}">{{.Vulnerability.ID}}</a>
+      {{- else if eq (printf "%.5s" .Vulnerability.ID) "GHSA-" -}}
+        <a href="https://github.com/advisories/{{.Vulnerability.ID}}">{{.Vulnerability.ID}}</a>
+      {{- else -}}
+        {{.Vulnerability.ID -}}
+      {{- end -}}
+      </td>
+
+      <td style="background-color:
+        {{- if eq (printf "%.8s" .Vulnerability.Severity) "Critical" -}} #f86c6b
+        {{- else if eq (.Vulnerability.Severity) "High" -}} #fd8c00
+        {{- else if eq (.Vulnerability.Severity) "Medium" -}} #ffc107
+        {{- else if eq (.Vulnerability.Severity) "Low" -}} #4dbd74
+        {{- else if eq (.Vulnerability.Severity) "Negligible" -}} grey
+        {{- else -}} transparent
+        {{- end -}}
+      ;">{{.Vulnerability.Severity}}</td>
+
+      <td>{{html .Vulnerability.Description}}</td>
+
+      <td style="background-color:
+        {{- if eq (printf "%.8s" .Vulnerability.Fix.State) "fixed" -}} #f86c6b
+        {{- else if eq (.Vulnerability.Fix.State) "not-fixed" -}} #fd8c00
+        {{- else if eq (.Vulnerability.Fix.State) "wont-fix" -}} #ffc107
+        {{- else if eq (.Vulnerability.Fix.State) "unknown" -}} grey
+        {{- else -}} transparent
+        {{- end -}}
+      ;">{{.Vulnerability.Fix.State}}</td>
+
+      <td>{{.Vulnerability.Fix.Versions | join ", "}}</td>
+    </tr>
+{{- end}}
+  </table>
+</body>
+
+</html>
