@@ -12,6 +12,10 @@ inputs:
   output_path:
     description: "path to store the sbom"
     required: true
+  generate_vulnerability_report:
+    description: "generate vulnerability report"
+    required: false
+    default: "false"
 
 runs:
   using: "composite"
@@ -30,6 +34,14 @@ runs:
       run: |
         export DEBIAN_FRONTEND=noninteractive && \
         curl -O -sSfL https://raw.githubusercontent.com/anchore/syft/main/install.sh && \
+        sudo sh install.sh -b /usr/local/bin
+
+    - name: Install grype
+      if: ${{ inputs.generate_vulnerability_report == 'true' }}
+      shell: bash
+      run: |
+        export DEBIAN_FRONTEND=noninteractive && \
+        curl -O -sSfL https://raw.githubusercontent.com/anchore/grype/main/install.sh && \
         sudo sh install.sh -b /usr/local/bin
 
     - name: Generate sbom for python
@@ -51,3 +63,12 @@ runs:
       shell: bash
       run: |
         syft --select-catalogers "github-actions" -o cyclonedx-json=${{ inputs.output_path }}/repo_${{ inputs.repo }}\_github-actions.json ${{ inputs.input_path }}/.github/
+
+    - name: Generate vulnerability report
+      if: ${{ inputs.generate_vulnerability_report == 'true' }}
+      shell: bash
+      run: |
+        for i in `find ${{ inputs.output_path }} -maxdepth 1 -name "*.json"`; do
+          grype $i -o template -t templates/html-table.tmpl > ${{ inputs.output_path }}/$i\_vulnerabilities.html
+          grype $i -o json > ${{ inputs.output_path }}/$i\_vulnerabilities.json
+        done
