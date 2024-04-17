@@ -16,7 +16,8 @@
         "GitHub.vscode-pull-request-github",
         "ms-vscode-remote.remote-containers",
         "donjayamanne.githistory",
-        "solomonkinard.git-blame"
+        "solomonkinard.git-blame",
+        "ms-python.python"
       ],
       "settings": {
         "terminal.integrated.profiles.linux": {

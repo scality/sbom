@@ -21,6 +21,7 @@ RUN export DEBIAN_FRONTEND=noninteractive && \
         bash-completion \
         curl \
         git \
+        python3-pip \
         p7zip-full \
         skopeo \
         tmux \
@@ -28,4 +29,7 @@ RUN export DEBIAN_FRONTEND=noninteractive && \
         vim \
         && \
     apt-get clean
+COPY requirements.txt /tmp/requirements.txt
+RUN python3 -m pip install --no-cache-dir --upgrade pip && \
+    python3 -m pip install --no-cache-dir -r /tmp/requirements.txt
 USER vscode
