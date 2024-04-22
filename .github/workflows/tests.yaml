@@ -30,28 +30,24 @@ jobs:
         with:
           path: ./
 
-      - name: Install syft
-        shell: bash
-        run: |
-          export DEBIAN_FRONTEND=noninteractive && \
-          curl -O -sSfL https://raw.githubusercontent.com/anchore/syft/main/install.sh && \
-          sudo sh install.sh -b /usr/local/bin
 
-      - name: Run syft
+      # - name: Download artifact
+      #   uses: ./
+      #   with:
+      #     artifact-url: https://distro.ibiblio.org/tinycorelinux/15.x/x86/release/Core-15.0.iso
+
+      - name: Install scanners
         uses: ./
         with:
-          repo: sbom-test
-          input_path: ./tests
-          output_path: .
-          generate_vulnerability_report: "true"
+          grype-version: 0.76.0
 
-      - name: Print the content of generated sbom file
-        run: |
-          for sbom in repo_*.json; do
-            echo "Content of $sbom"
-            cat $sbom
-          done
-          for sbom in repo_*.html; do
-            echo "Content of vulnerability result for SBOM: $sbom"
-            cat $sbom
-          done
+      # - name: Print the content of generated sbom file
+      #   run: |
+      #     for sbom in repo_*.json; do
+      #       echo "Content of $sbom"
+      #       cat $sbom
+      #     done
+      #     for sbom in repo_*.html; do
+      #       echo "Content of vulnerability result for SBOM: $sbom"
+      #       cat $sbom
+      #     done
