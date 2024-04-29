@@ -44,10 +44,6 @@ inputs:
 runs:
   using: "composite"
   steps:
-    - name: Debug env
-      run: env
-      shell: bash
-      if: secrets.ACTIONS_STEP_DEBUG
     - name: Install Python 3
       uses: actions/setup-python@v5
       with:

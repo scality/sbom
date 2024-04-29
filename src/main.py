@@ -10,24 +10,24 @@ from lib.vuln import generate_vuln_report
 install()
 
 # Set default values
-format = os.environ.get("INPUT_FORMAT")
+format = os.environ.get("FORMAT")
 if format is None:
     format = "cyclonedx-json"
 
-version = os.environ.get("INPUT_VERSION")
+version = os.environ.get("VERSION")
 print(f"Version: {version}")
 
-output_dir = os.environ.get("INPUT_OUTPUT_DIR")
+output_dir = os.environ.get("OUTPUT_DIR")
 if output_dir is None:
     output_dir = "/tmp/sbom"
 print(f"Output directory: {output_dir}")
 
-excluded_mediatypes = os.environ.get("INPUT_EXCLUDE_MEDIATYPES")
+excluded_mediatypes = os.environ.get("EXCLUDE_MEDIATYPES")
 
-vuln_report = os.environ.get("INPUT_VULN_REPORT")
+vuln_report = os.environ.get("VULN_REPORT")
 
 # Detect target type
-target = os.environ.get("INPUT_TARGET")
+target = os.environ.get("TARGET")
 print(f"Target: {target}")
 result = detect_target_type(target)
 
