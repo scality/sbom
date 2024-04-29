@@ -44,6 +44,10 @@ inputs:
 runs:
   using: "composite"
   steps:
+
+    - name: Debug
+      run: echo "Target: $INPUT_TARGET, Output Dir: $INPUT_OUTPUT_DIR"
+
     - name: Install Python 3
       uses: actions/setup-python@v5
       with:
