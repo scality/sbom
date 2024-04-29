@@ -14,11 +14,19 @@ on:
         required: false
       vuln_report:
         description: "Generate vulnerability report"
-        default: "False"
+        default: false
         required: false
+        type: boolean
+
+# Redefining those var via the env because when this workflow
+# is triggered on push or pull_request event, the default value
+# of the inputs is not set.
+env:
+  TARGET: "${{ inputs.target || '.' }}"
+  OUTPUT_DIR: "${{ inputs.output_dir || '/tmp/sbom' }}"
+  VULN_REPORT: "${{ inputs.vuln_report || false }}"
 
 jobs:
-
   test-as-action:
     runs-on: ubuntu-22.04
     steps:
@@ -27,7 +35,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           path: ./
-      
+
       - name: Download artifact
         shell: bash
         run: curl -o /tmp/Core-15.0.iso https://distro.ibiblio.org/tinycorelinux/15.x/x86/release/Core-15.0.iso
@@ -35,15 +43,15 @@ jobs:
       - name: Scan repo
         uses: ./
         with:
-          target: ${{ inputs.target }}
-          output_dir: ${{ inputs.output_dir }}
+          target: ${{ env.TARGET }}
+          output_dir: ${{ env.OUTPUT_DIR }}
           vuln_report: True
 
       - name: Scan iso
         uses: ./
         with:
           target: /tmp/Core-15.0.iso
-          output_dir: ${{ inputs.output_dir }}
+          output_dir: ${{ env.OUTPUT_DIR }}
           vuln_report: True
 
       - name: Print the content of generated sbom file

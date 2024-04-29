@@ -28,6 +28,7 @@ vuln_report = os.environ.get("INPUT_VULN_REPORT")
 
 # Detect target type
 target = os.environ.get("INPUT_TARGET")
+print(f"Target: {target}")
 result = detect_target_type(target)
 
 target_type = result["target_type"]
