@@ -25,10 +25,6 @@ print(f"Output directory: {output_dir}")
 excluded_mediatypes = os.environ.get("INPUT_EXCLUDE_MEDIATYPES")
 
 vuln_report = os.environ.get("INPUT_VULN_REPORT")
-if vuln_report is None:
-    vuln_report = False
-else:
-    vuln_report = True
 
 # Detect target type
 target = os.environ.get("INPUT_TARGET")
