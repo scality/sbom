@@ -68,11 +68,11 @@ runs:
     - name: Run the scan
       shell: bash
       run: python3 ${{ github.action_path }}/src/main.py
-      with:
-        target: ${{ inputs.target }}
-        format: ${{ inputs.format }}
-        output_dir: ${{ inputs.output_dir }}
-        vuln_report: ${{ inputs.vuln_report }}
-        grype-version: ${{ inputs.grype-version }}
-        syft-version: ${{ inputs.syft-version }}
-        trivy-version: ${{ inputs.trivy-version }}
+      env:
+        INPUT_TARGET: ${{ inputs.target }}
+        INPUT_FORMAT: ${{ inputs.format }}
+        INPUT_OUTPUT_DIR: ${{ inputs.output_dir }}
+        INPUT_VULN_REPORT: ${{ inputs.vuln_report }}
+        INPUT_GRYPE_VERSION: ${{ inputs.grype-version }}
+        INPUT_SYFT_VERSION: ${{ inputs.syft-version }}
+        INPUT_TRIVY_VERSION: ${{ inputs.trivy-version }}
