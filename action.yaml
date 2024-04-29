@@ -45,16 +45,17 @@ runs:
   using: "composite"
   steps:
 
-    - name: Debug
-      run: echo "Target: $INPUT_TARGET, Output Dir: $INPUT_OUTPUT_DIR"
-      env:
-        INPUT_TARGET: ${{ inputs.target }}
-        INPUT_FORMAT: ${{ inputs.format }}
-        INPUT_OUTPUT_DIR: ${{ inputs.output_dir }}
-        INPUT_VULN_REPORT: ${{ inputs.vuln_report }}
-        INPUT_GRYPE_VERSION: ${{ inputs['grype-version'] }}
-        INPUT_SYFT_VERSION: ${{ inputs['syft-version'] }}
-        INPUT_TRIVY_VERSION: ${{ inputs['trivy-version'] }}
+    - name: Run the scan
+      shell: bash
+      run: |
+        export INPUT_TARGET=${{ inputs.target }}
+        export INPUT_FORMAT=${{ inputs.format }}
+        export INPUT_OUTPUT_DIR=${{ inputs.output_dir }}
+        export INPUT_VULN_REPORT=${{ inputs.vuln_report }}
+        export INPUT_GRYPE_VERSION=${{ inputs['grype-version'] }}
+        export INPUT_SYFT_VERSION=${{ inputs['syft-version'] }}
+        export INPUT_TRIVY_VERSION=${{ inputs['trivy-version'] }}
+        python3 ${{ github.action_path }}/src/main.py
 
     - name: Install Python 3
       uses: actions/setup-python@v5
