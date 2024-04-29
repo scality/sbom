@@ -30,16 +30,19 @@ jobs:
       
       - name: Download artifact
         shell: bash
-        run: python3 ./src/lib/download.py 
-        env:
-          url: https://distro.ibiblio.org/tinycorelinux/15.x/x86/release/Core-15.0.iso
-          output_dir: /tmp/artifacts
-          output_file: core-15.0.iso
+        run: curl -o /tmp/Core-15.0.iso https://distro.ibiblio.org/tinycorelinux/15.x/x86/release/Core-15.0.iso
 
       - name: Scan repo
         uses: ./
         with:
           target: ${{ inputs.target }}
+          output_dir: ${{ inputs.output_dir }}
+          vuln_report: True
+
+      - name: Scan iso
+        uses: ./
+        with:
+          target: /tmp/Core-15.0.iso
           output_dir: ${{ inputs.output_dir }}
           vuln_report: True
 
