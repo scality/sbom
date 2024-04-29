@@ -62,11 +62,3 @@ runs:
     - name: Run the scan
       shell: bash
       run: python3 ${{ github.action_path }}/src/main.py
-      with:
-        grype-version: ${{ inputs.grype-version }}
-        syft-version: ${{ inputs.syft-version }}
-        trivy-version: ${{ inputs.trivy-version }}
-        target: ${{ inputs.target }}
-        format: ${{ inputs.format }}
-        output_dir: ${{ inputs.output_dir }}
-
