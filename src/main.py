@@ -1,85 +1,91 @@
 import os
-import argparse
-import subprocess
-from urllib.parse import urlparse
+from lib.detect import detect_target_type
+from lib.install import install
+from lib.scan import ScanCommand
+from lib.iso import extract_iso, image_dir_present
+from lib.convert import detect_image_origin, convert_image_to_oci, get_mediatype
+from lib.vuln import generate_vuln_report
 
-# if workdir is set in env, use it
-work_dir = os.getenv("work_dir", "/tmp/sbom")
+# Install base packages
+install()
 
-parser = argparse.ArgumentParser(
-                        prog="sbom-gen",
-                        description="SBOM Generation Tool")
-parser.add_argument("-v", "--version", action="version", version="%(prog)s 1.0")
-subparsers = parser.add_subparsers(help="sub-command help", dest="subparser_name")
+# Set default values
+format = os.environ.get("INPUT_FORMAT")
+if format is None:
+    format = "cyclonedx-json"
 
-parser_install = subparsers.add_parser("install", help="install help")
-parser_install.add_argument("-p", "--package", help="package to install")
-parser_install.add_argument("-v", "--version", help="version to install")
+version = os.environ.get("INPUT_VERSION")
+print(f"Version: {version}")
 
-parser_download = subparsers.add_parser("download", help="download help")
-parser_download.add_argument("-u", "--username", help="username for authentication", required=False, default=None)
-parser_download.add_argument("-p", "--password", help="password for authentication", required=False, default=None)
-parser_download.add_argument("-U", "--url", help="URL to download", nargs='+')
-parser_download.add_argument("-d", "--output-dir", default=f"{ work_dir }/artifacts", help="output directory")
-parser_download.add_argument("-o", "--output-file", help="output file")
+output_dir = os.environ.get("INPUT_OUTPUT_DIR")
+if output_dir is None:
+    output_dir = "/tmp/sbom"
+print(f"Output directory: {output_dir}")
 
-parser_scan = subparsers.add_parser("scan", help="scan help")
-scan_target_group = parser_scan.add_argument_group("Scan targets", "Choose only one target type to scan")
-scan_target_exclusive_group = scan_target_group.add_mutually_exclusive_group(required=True)
-scan_target_exclusive_group.add_argument("-f", "--file", help="file to scan")
-scan_target_exclusive_group.add_argument("-p", "--path", help="path to scan")
-scan_target_exclusive_group.add_argument("-i", "--image", help="image to scan")
-scan_target_exclusive_group.add_argument("-I", "--iso", help="ISO to scan")
-parser_scan.add_argument("-e", "--exclude_mediatypes", nargs='+', help="Media types to ignore")
-parser_scan.add_argument("-o", "--output-dir", default=f"{ work_dir }/results", help="directory to store scan results")
-parser_scan.add_argument("-r", "--report", action='store_true', help="Generate vlnerability report in a file")
-parser_scan.add_argument("-F", "--format", default="cyclonedx-json", help="format of the SBOM, default is cyclonedx-json. Choose one of: spdx, spdx-json, cyclonedx, cyclonedx-json")
+excluded_mediatypes = os.environ.get("INPUT_EXCLUDE_MEDIATYPES")
 
-args = parser.parse_args()
-config = vars(args)
+vuln_report = os.environ.get("INPUT_VULN_REPORT")
+if vuln_report is None:
+    vuln_report = False
+else:
+    vuln_report = True
 
-if args.subparser_name == "download":
-    urls = config["url"]
-    username = config["username"] if config["username"] else ""
-    password = config["password"] if config["password"] else ""
-    output_file = config["output_file"] if config["output_file"] else None
-    output_dir = config["output_dir"] if config["output_dir"] else None
-    
-    for url in urls:
-        if output_file is None:
-            output_file = os.path.basename(urlparse(url).path)
-        
-        subprocess.run(["python3", "src/download.py", url, username, password, output_dir, output_file])
-        output_file = None  # Reset output_file for the next iteration
+# Detect target type
+target = os.environ.get("INPUT_TARGET")
+result = detect_target_type(target)
 
-if args.subparser_name == "install":
-    package = config["package"] if config["package"] else "all"
-    version = config["version"] if config["version"] else None
-    command = ["python3", "src/install.py", package]
-    if version:
-        command.append(version)
-    subprocess.run(command)
+target_type = result["target_type"]
+name = result["name"]
+version = result["version"]
 
-if args.subparser_name == "scan":
-    command = ["python3", "src/scan.py"]
-    
-    if config["file"]:
-        command.extend(["--file", config["file"]])
-    if config["path"]:
-        command.extend(["--path", config["path"]])
-    if config["image"]:
-        command.extend(["--image", config["image"]])
-    if config["iso"]:
-        command.extend(["--iso", config["iso"]])
-    if config["format"]:
-        command.extend(["--format", config["format"]])
-    if config["output_dir"]:
-        command.extend(["--output-dir", config["output_dir"]])
-    if config["exclude_mediatypes"]:
-        command.append("--exclude_mediatypes")
-        command.extend(config["exclude_mediatypes"])
-    if config["report"]:
-        command.append("--report")
+# Run the appropriate scanner
+print(f"Running {target_type} scanner...")
 
-    print(command)
-    subprocess.run(command)
+if target_type == "git":
+    target_type = "dir"
+    scan_command = ScanCommand(target=target, target_type=target_type, name=name, version=version, output_dir=output_dir, output_file_prefix="repo", format=format)
+    scan_command.execute()
+
+if target_type == "directory":
+    target_type = "dir"
+    scan_command = ScanCommand(target=target, target_type=target_type, name=name, version=version, output_dir=output_dir, output_file_prefix="dir", format=format)
+    scan_command.execute()
+
+if target_type == "iso":
+    extracted_dir = extract_iso(target)
+    image_dir = image_dir_present(extracted_dir)
+    target_type = "dir"
+    if image_dir is None:
+        print("Image directory not found.")
+        scan_command = ScanCommand(target=extracted_dir, target_type=target_type, name=name, version=version, output_dir=output_dir, output_file_prefix="iso", format=format)
+        scan_command.execute()
+    else:
+        output_file_prefix = "image"
+        convert_dir = "/tmp/images"
+        for root, dirs, _ in os.walk(image_dir):
+            for dir in dirs:
+                dir_path = os.path.join(root, dir)
+                image_name = os.path.basename(dir_path)
+                if os.path.isdir(dir_path):
+                    for subroot, subdirs, _ in os.walk(dir_path):
+                        for subdir in subdirs:
+                            # show version of the image
+                            image_version = os.path.basename(subdir)
+                            print(f"Image name: {image_name}")
+                            print(f"Image version: {image_version}")
+                            subdir_path = os.path.join(subroot, subdir)
+                            print(f"Scanning image: {subdir_path}")
+                            detect_image_origin(subdir_path)
+                            excluded = get_mediatype(subdir_path, excluded_mediatypes)
+                            if not excluded:
+                                convert_image_to_oci(subdir_path, f"{convert_dir}/{image_name}_{image_version}")
+                                scan_command = ScanCommand(target=f"{convert_dir}/{image_name}_{image_version}", target_type="oci-dir", name=image_name, version=image_version, output_dir=output_dir, output_file_prefix=image_name, format=format)
+                                scan_command.execute()
+                            if excluded:
+                                print(f"Excluded image: {subdir_path}")
+                                scan_command = ScanCommand(target=f"{subdir_path}", target_type="dir", name=image_name, version=image_version, output_dir=output_dir, output_file_prefix=image_name, format=format)
+                                scan_command.execute()
+
+if vuln_report:
+    print("Generating vulnerability report...")
+    generate_vuln_report(output_dir)

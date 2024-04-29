@@ -4,19 +4,17 @@ on:
   pull_request:
   workflow_dispatch:
     inputs:
-      ref:
-        description: "the git revision to checkout"
-        required: false
-      repo:
-        description: "repository to scan"
-        required: false
-      input_path:
-        description: "path to the repository"
+      target:
+        description: "path to the target to scan"
         default: "."
         required: false
-      output_path:
+      output_dir:
         description: "path to store the sbom"
-        default: "."
+        default: "/tmp/sbom"
+        required: false
+      vuln_report:
+        description: "Generate vulnerability report"
+        default: "False"
         required: false
 
 jobs:
@@ -29,25 +27,31 @@ jobs:
         uses: actions/checkout@v4
         with:
           path: ./
+      
+      - name: Download artifact
+        shell: bash
+        run: python3 ${{ github.action_path }}/src/lib/download.py 
+        env:
+          url: https://distro.ibiblio.org/tinycorelinux/15.x/x86/release/Core-15.0.iso
+          output_dir: /tmp/artifacts
+          output_file: core-15.0.iso
 
+      - name: Scan repo
+        shell: bash
+        run: python3 ${{ github.action_path }}/src/main.py
+        env:
+          target: ${{ inputs.target }}
+          output_dir: ${{ inputs.output_dir }}
+          vuln_report: True
 
-      # - name: Download artifact
-      #   uses: ./
-      #   with:
-      #     artifact-url: https://distro.ibiblio.org/tinycorelinux/15.x/x86/release/Core-15.0.iso
-
-      - name: Install scanners
-        uses: ./
-        with:
-          grype-version: 0.76.0
-
-      # - name: Print the content of generated sbom file
-      #   run: |
-      #     for sbom in repo_*.json; do
-      #       echo "Content of $sbom"
-      #       cat $sbom
-      #     done
-      #     for sbom in repo_*.html; do
-      #       echo "Content of vulnerability result for SBOM: $sbom"
-      #       cat $sbom
-      #     done
+      - name: Print the content of generated sbom file
+        shell: bash
+        run: |
+          for sbom in /tmp/sbom/*.json; do
+            echo "Content of $sbom"
+            cat $sbom
+          done
+          for sbom in /tmp/sbom/reports/*.html; do
+            echo "Content of vulnerability result for SBOM: $sbom"
+            cat $sbom
+          done

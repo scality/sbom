@@ -16,7 +16,6 @@ RUN export DEBIAN_FRONTEND=noninteractive && \
         && \
     apt-get clean
 COPY requirements.txt /tmp/requirements.txt
-RUN python3 src/install.py all
 RUN python3 -m pip install --no-cache-dir --upgrade pip && \
     python3 -m pip install --no-cache-dir -r /tmp/requirements.txt
 USER vscode

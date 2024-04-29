@@ -19,4 +19,7 @@ fi
 echo "Updating localtime"
 sudo ln -fs /usr/share/zoneinfo/UTC /etc/localtime
 
+# Install dependencies
+echo "Installing dependencies"
+python3 src/main.py install
 echo "End of setup"
