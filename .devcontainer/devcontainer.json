@@ -5,19 +5,32 @@
   },
   "features": {
     "ghcr.io/devcontainers/features/github-cli:1": {},
-    "ghcr.io/devcontainers/features/sshd:1": {}
+    "ghcr.io/devcontainers/features/sshd:1": {},
+    "ghcr.io/devcontainers/features/docker-in-docker:2": {}
   },
   "customizations": {
     "vscode": {
       "extensions": [
+        //Python support
+        "ms-python.python",
+        //Python test explorer
+        "littlefoxteam.vscode-python-test-adapter",
+        //PEP Pyton formatter
+        "ms-python.black-formatter",
+        //Python debugger
+        "ms-python.debugpy",
+        //Github Action helper
         "github.vscode-github-actions",
+        //Github Copilot
         "GitHub.copilot",
+        //Github Copilot chat
         "GitHub.copilot-chat",
+        //Github Pull Request
         "GitHub.vscode-pull-request-github",
-        "ms-vscode-remote.remote-containers",
+        //Git history
         "donjayamanne.githistory",
-        "solomonkinard.git-blame",
-        "ms-python.python"
+        //Git blame
+        "solomonkinard.git-blame"
       ],
       "settings": {
         "terminal.integrated.profiles.linux": {
@@ -31,5 +44,5 @@
     }
   },
   "remoteUser": "vscode",
-  "postCreateCommand": ".devcontainer/setup.sh"
+  "postCreateCommand": "bash .devcontainer/setup.sh"
 }
