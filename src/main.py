@@ -131,6 +131,9 @@ elif TARGET_TYPE == "iso":
                             subdir_path = os.path.join(subroot, subdir)
                             print(f"Scanning image dir: {subdir_path}")
                             detect_image_origin(subdir_path)
+                            # get source iso basename
+                            source_iso = os.path.basename(extracted_dir)
+                            IMAGE_FILE_PREFIX=f"{OUTPUT_FILE_PREFIX}_{source_iso}"
                             EXCLUDED = check_mediatype(
                                 subdir_path, excluded_mediatypes
                             )
@@ -145,7 +148,7 @@ elif TARGET_TYPE == "iso":
                                     name=image_name,
                                     version=image_version,
                                     output_dir=OUTPUT_DIR,
-                                    output_file_prefix=OUTPUT_FILE_PREFIX,
+                                    output_file_prefix=IMAGE_FILE_PREFIX,
                                     sbom_format=SBOM_FORMAT,
                                 )
                                 scan_command.execute()
@@ -157,7 +160,7 @@ elif TARGET_TYPE == "iso":
                                     name=image_name,
                                     version=image_version,
                                     output_dir=OUTPUT_DIR,
-                                    output_file_prefix=OUTPUT_FILE_PREFIX,
+                                    output_file_prefix=IMAGE_FILE_PREFIX,
                                     sbom_format=SBOM_FORMAT,
                                 )
                                 scan_command.execute()
