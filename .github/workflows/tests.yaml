@@ -2,56 +2,54 @@ name: "action-test"
 on:
   push:
   pull_request:
-  workflow_dispatch:
-    inputs:
-      ref:
-        description: "the git revision to checkout"
-        required: false
-      repo:
-        description: "repository to scan"
-        required: false
-      input_path:
-        description: "path to the repository"
-        default: "."
-        required: false
-      output_path:
-        description: "path to store the sbom"
-        default: "."
-        required: false
 
 jobs:
-
   test-as-action:
     runs-on: ubuntu-22.04
     steps:
-
       - name: Checkout
         uses: actions/checkout@v4
         with:
           path: ./
+          fetch-depth: 0
+          fetch-tags: true
 
-      - name: Install syft
+      - name: Download artifact
         shell: bash
-        run: |
-          export DEBIAN_FRONTEND=noninteractive && \
-          curl -O -sSfL https://raw.githubusercontent.com/anchore/syft/main/install.sh && \
-          sudo sh install.sh -b /usr/local/bin
+        run: curl -o /tmp/Core-15.0.iso https://distro.ibiblio.org/tinycorelinux/15.x/x86/release/Core-15.0.iso
 
-      - name: Run syft
+      - name: Scan repo
         uses: ./
         with:
-          repo: sbom-test
-          input_path: ./tests
-          output_path: .
-          generate_vulnerability_report: "true"
+          target: ./
+          output-dir: "/tmp/test/sbom"
+          syft-version: "1.1.0"
+          vuln-report: True
+
+      - name: Scan directory
+        uses: ./
+        with:
+          target: /etc
+          output-dir: "/tmp/test/sbom"
+          name: "ghactionetc"
+
+      - name: Scan iso
+        uses: ./
+        with:
+          target: /tmp/Core-15.0.iso
+          output-dir: "/tmp/test/sbom"
+          version: "15.0"
+          name: "tinycorelinux"
+          vuln-report: False
 
       - name: Print the content of generated sbom file
+        shell: bash
         run: |
-          for sbom in repo_*.json; do
+          for sbom in /tmp/test/sbom/*.json; do
             echo "Content of $sbom"
             cat $sbom
           done
-          for sbom in repo_*.html; do
+          for sbom in /tmp/test/sbom/reports/*.html; do
             echo "Content of vulnerability result for SBOM: $sbom"
             cat $sbom
           done
