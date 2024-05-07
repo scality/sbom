@@ -16,13 +16,13 @@ def is_git_repo(target):
     except exc.InvalidGitRepositoryError:
         return False
 
-def get_repo_name():
+def get_repo_name(target):
     """
     ## Get the name of a git repository.
     ### Args:
         target (str): The path to the git repository.
     """
-    name = Repo(".").remotes.origin.url.split(".git")[0].split("/")[-1]
+    name = Repo(target).remotes.origin.url.split(".git")[0].split("/")[-1]
     return name
 
 def get_repo_version(target):
@@ -55,9 +55,10 @@ def detect_target_type(target):
     elif os.path.isdir(target):
         target_type = "directory"
         print("Detected directory.")
+        print(f"Provided target: {target}")
         if is_git_repo(target):
             version = get_repo_version(target)
-            name = get_repo_name()
+            name = get_repo_name(target)
             target_type = "git"
             print(f"Detected git repository: {name}, version: {version}")
         else:
