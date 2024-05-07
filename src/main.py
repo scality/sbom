@@ -133,7 +133,7 @@ elif TARGET_TYPE == "iso":
                             detect_image_origin(subdir_path)
                             # get source iso basename
                             source_iso = os.path.basename(extracted_dir)
-                            IMAGE_FILE_PREFIX=f"{OUTPUT_FILE_PREFIX}_{source_iso}"
+                            IMAGE_NAME_COMPLETE=f"{source_iso}:{image_name}"
                             EXCLUDED = check_mediatype(
                                 subdir_path, excluded_mediatypes
                             )
@@ -145,10 +145,10 @@ elif TARGET_TYPE == "iso":
                                 scan_command = ScanCommand(
                                     target=f"{CONVERT_DIR}/{image_name}_{image_version}",
                                     target_type="oci-dir",
-                                    name=image_name,
+                                    name=IMAGE_NAME_COMPLETE,
                                     version=image_version,
                                     output_dir=OUTPUT_DIR,
-                                    output_file_prefix=IMAGE_FILE_PREFIX,
+                                    output_file_prefix=OUTPUT_FILE_PREFIX,
                                     sbom_format=SBOM_FORMAT,
                                 )
                                 scan_command.execute()
@@ -157,10 +157,10 @@ elif TARGET_TYPE == "iso":
                                 scan_command = ScanCommand(
                                     target=f"{subdir_path}",
                                     target_type="dir",
-                                    name=image_name,
+                                    name=IMAGE_NAME_COMPLETE,
                                     version=image_version,
                                     output_dir=OUTPUT_DIR,
-                                    output_file_prefix=IMAGE_FILE_PREFIX,
+                                    output_file_prefix=OUTPUT_FILE_PREFIX,
                                     sbom_format=SBOM_FORMAT,
                                 )
                                 scan_command.execute()

@@ -26,7 +26,7 @@ class ScanCommand:
         self.output_file_prefix = output_file_prefix
         self.output_file = (
             f"{self.sbom_format}={self.output_dir}/"
-            f"{self.output_file_prefix}_{self.name}_{self.version}.json"
+            f"{self.output_file_prefix}_{self.name.replace(':', '_')}_{self.version}.json"
         )
 
     def execute(self):
