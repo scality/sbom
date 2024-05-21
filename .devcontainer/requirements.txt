@@ -1,4 +1,4 @@
-requests==2.31.0
+requests==2.32.0
 GitPython==3.1.43
 pyunpack==0.3
 patool==2.2.0
