@@ -7,7 +7,7 @@ import requests
 from pyunpack import Archive
 
 # Define the scanners and their versions
-scanners = {"syft": "1.3.0", "grype": "0.77.3", "trivy": "0.51.1"}
+scanners = {"syft": "1.8.0", "grype": "0.79.1", "trivy": "0.53.0"}
 
 # Define the base URLs for the scanners
 ANCHORE_BASE_URL = (
