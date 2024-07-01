@@ -88,13 +88,14 @@ def check_mediatype(image_dir, excluded_mediatypes=None):
             for layer in data["layers"]:
                 if "mediaType" in layer:
                     media_types.append(layer["mediaType"])
-        excluded_types = [
+        # Use a set to collect unique excluded media types
+        excluded_types = set([
             media_type
             for media_type in media_types
             if media_type in excluded_mediatypes
-        ]
+        ])
         if excluded_types:
-            print(f"Excluded media types found: {excluded_types} in {image_dir}")
+            print(f"Excluded media types found: {list(excluded_types)} in {image_dir}")
             excluded = True
         else:
             print("No excluded media types found, continuing.")
