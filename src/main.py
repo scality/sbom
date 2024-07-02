@@ -2,6 +2,7 @@
 """This module is the main core of this github action"""
 
 import os
+from shutil import rmtree
 from lib.detect import detect_target_type
 from lib.install import install
 from lib.scan import ScanCommand
@@ -164,6 +165,12 @@ elif TARGET_TYPE == "iso":
                                     sbom_format=SBOM_FORMAT,
                                 )
                                 scan_command.execute()
+        # Delete the converted images
+        # This is done to avoid errors and scanning again same
+        # images when the action is run multiple times
+        if os.path.isdir(CONVERT_DIR):
+            rmtree(CONVERT_DIR, ignore_errors=True)
+            print(f"Deleted {CONVERT_DIR}")
 
 if VULN_REPORT:
     generate_vuln_report(OUTPUT_DIR)
