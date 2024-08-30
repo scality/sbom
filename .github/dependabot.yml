@@ -1,0 +1,19 @@
+version: 2
+updates:
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "daily"
+    reviewers:
+      - "scality/metalk8s"
+
+  - package-ecosystem: "pip"
+    directory: "/"
+    schedule:
+      interval: "daily"
+    rebase-strategy: "auto"
+    ignore:
+      - dependency-name: "requests"
+        versions: ["<2.25.1"]
+    reviewers:
+      - "scality/metalk8s"
