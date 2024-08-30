@@ -23,15 +23,15 @@ jobs:
         with:
           target: ./
           output-dir: "/tmp/test/sbom"
-          syft-version: "1.1.0"
           vuln-report: True
 
       - name: Scan directory
         uses: ./
         with:
-          target: /etc
+          target: /usr/local/bin
           output-dir: "/tmp/test/sbom"
-          name: "ghactionetc"
+          syft-version: "1.10.0"
+          name: "usrlocalbin"
 
       - name: Scan iso
         uses: ./
@@ -41,6 +41,39 @@ jobs:
           version: "15.0"
           name: "tinycorelinux"
           vuln-report: False
+
+      - name: Ensure generated sbom file for repo contains the expected content
+        shell: bash
+        run: |
+          if jq -e '.components[] | select(.name == "lodash")' /tmp/test/sbom/repo_sbom_*.json > /dev/null; then
+            echo "lodash is present in the JSON file."
+            exit 0
+          else
+            echo "lodash is NOT present in the JSON file."
+            exit 1
+          fi
+
+      - name: Ensure generated sbom file for iso contains the expected content
+        shell: bash
+        run: |
+          if jq -e '.components[] | select(.version == "6.6.8-tinycore")' /tmp/test/sbom/iso_tinycorelinux_15.0.json > /dev/null; then
+            echo "tinycore is present in the JSON file."
+            exit 0
+          else
+            echo "tinycore is NOT present in the JSON file."
+            exit 1
+          fi
+
+      - name: Ensure generated sbom file for dir contains the expected content
+        shell: bash
+        run: |
+          if jq -e '.components[] | select(.purl == "pkg:golang/github.com/anchore/syft@v1.10.0")' /tmp/test/sbom/dir_bin_undefined.json > /dev/null; then
+            echo "syft is present in the JSON file."
+            exit 0
+          else
+            echo "syft is NOT present in the JSON file."
+            exit 1
+          fi
 
       - name: Print the content of generated sbom file
         shell: bash
