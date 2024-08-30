@@ -68,7 +68,7 @@ def install_package(package_name, version):
     os.makedirs(f"tmp_{package_name}", exist_ok=True)
     # Extract tarball
     Archive(f"{package_name}_v{version}.tar.gz").extractall(f"tmp_{package_name}")
- # Instead of shutil.move, use shutil.copy and os.remove for cross-device compatibility
+    # Instead of shutil.move, use shutil.copy and os.remove for cross-device compatibility
     shutil.copy(f"tmp_{package_name}/{package_name}", f"/usr/local/bin/{package_name}")
     # Delete the original file after copying
     os.remove(f"tmp_{package_name}/{package_name}")
