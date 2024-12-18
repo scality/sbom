@@ -2,9 +2,11 @@ name: "nightly"
 run-name: "Nightly tests for ${{ github.ref_name }}"
 
 on:
-  schedule:
-    - cron: "0 0 * * *"  # Runs daily at midnight
-  workflow_dispatch:
+## temp fix for nightly tests
+  push:
+#  schedule:
+#    - cron: "0 0 * * *"  # Runs daily at midnight
+#  workflow_dispatch:
 
 jobs:
   update-scanners:
