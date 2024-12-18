@@ -73,7 +73,7 @@ runs:
           file \
           jq \
           p7zip-full \
-          python3-distutils
+          python3-setuptools
 
     - name: Run the scan
       shell: bash
