@@ -15,7 +15,9 @@ It has been installed through the `gh` extension.
 To run the workflow locally, execute the following command:
 
 ```bash
-gh act push --rm --workflows=.github/workflows/tests.yaml -P ubuntu-22.04=ghcr.io/catthehacker/ubuntu:act-22.04
+docker login ghcr.io
+gh extension install https://github.com/nektos/gh-act
+gh act push --rm --workflows=.github/workflows/tests.yaml -P ubuntu-24.04=ghcr.io/catthehacker/ubuntu:act-22.04
 ```
 
 For more information on how to use `act`, please refer to the [official documentation] or run `gh act --help`.

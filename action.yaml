@@ -1,3 +1,4 @@
+---
 name: "Scality SBOM Action"
 description: "Creates an SBOM (Software Bill Of Materials) from your code, and artifacts."
 author: "Scality"

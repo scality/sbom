@@ -1,3 +1,4 @@
+---
 name: "nightly"
 run-name: "Nightly tests for ${{ github.ref_name }}"
 
@@ -38,15 +39,17 @@ jobs:
       - name: Update scanner versions
         run: python .github/scripts/update_scanners.py
 
-      - name: Create Pull Request
-        uses: peter-evans/create-pull-request@v7
-        id: pr
-        with:
-          title: Dependency update
-          branch: feature/deps-update
-          delete-branch: true
-          commit-message: ":arrow_up: Update scanner versions"
-          token: ${{ steps.app-token.outputs.token }}
+      - name: Create pull request  
+        uses: actions/github-script@v7  
+        with:  
+          script: |
+            const pr = await github.rest.pulls.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              head: "feature/deps-update",
+              base: "main",
+              title: ":arrow_up: Update scanner versions"
+            })
 
   vuln-scan:
     permissions:
@@ -58,7 +61,6 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          path: ./
           fetch-depth: 0
           fetch-tags: true
 

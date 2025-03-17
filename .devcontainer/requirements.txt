@@ -1,4 +1,5 @@
-requests==2.32.0
-GitPython==3.1.43
+requests==2.32.3
+GitPython==3.1.44
 pyunpack==0.3
-patool==2.2.0
+patool==4.0.0
+pre-commit==4.1.0

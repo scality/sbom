@@ -1,4 +1,4 @@
-FROM mcr.microsoft.com/devcontainers/base:jammy
+FROM mcr.microsoft.com/devcontainers/base:noble
 
 RUN export DEBIAN_FRONTEND=noninteractive && \
     apt-get update && \
@@ -8,14 +8,29 @@ RUN export DEBIAN_FRONTEND=noninteractive && \
         bash-completion \
         curl \
         git \
+        libsqlite3-dev \
+        python3 \
         python3-pip \
+        python3-venv \
         p7zip-full \
         skopeo \
         tmux \
         vim \
         && \
     apt-get clean
-COPY requirements.txt /tmp/requirements.txt
-RUN python3 -m pip install --no-cache-dir --upgrade pip && \
-    python3 -m pip install --no-cache-dir -r /tmp/requirements.txt
+
 USER vscode
+
+ENV LANG=C.UTF-8
+ENV LC_ALL=C.UTF-8
+
+# Create virtual environment
+ENV VIRTUAL_ENV=/home/vscode/venv
+RUN python3 -m venv $VIRTUAL_ENV
+ENV PATH="$VIRTUAL_ENV/bin:$PATH"
+
+COPY requirements.txt /tmp/requirements.txt
+
+# Install python libs in the virtual environment
+RUN pip install --upgrade pip && \
+    pip install -r /tmp/requirements.txt
