@@ -7,7 +7,7 @@ import requests
 from pyunpack import Archive
 
 # Define the scanners and their versions
-scanners = {"syft": "1.8.0", "grype": "0.79.1", "trivy": "0.53.0"}
+scanners = {"syft": "1.21.0", "grype": "0.90.0", "trivy": "0.60.0"}
 
 # Define the base URLs for the scanners
 ANCHORE_BASE_URL = (
@@ -20,6 +20,7 @@ AQUASEC_BASE_URL = (
     "v{version}/{package_name}_{version}_Linux-64bit.tar.gz"
 )
 
+
 def set_versions(package_name):
     """
     ## This function sets the versions of the scanners.
@@ -29,6 +30,7 @@ def set_versions(package_name):
     else:
         version = scanners[package_name]
     return version
+
 
 def install_package(package_name, version):
     """
@@ -47,6 +49,8 @@ def install_package(package_name, version):
     except FileNotFoundError:
         print(f"{package_name} is not installed.")
     print(f"Installing {package_name} version {version}...")
+    # Set base URL based on package name
+    base_url = ""
     if package_name in ["syft", "grype"]:
         base_url = ANCHORE_BASE_URL
     elif package_name == "trivy":
@@ -68,7 +72,7 @@ def install_package(package_name, version):
     os.makedirs(f"tmp_{package_name}", exist_ok=True)
     # Extract tarball
     Archive(f"{package_name}_v{version}.tar.gz").extractall(f"tmp_{package_name}")
- # Instead of shutil.move, use shutil.copy and os.remove for cross-device compatibility
+    # Instead of shutil.move, use shutil.copy and os.remove for cross-device compatibility
     shutil.copy(f"tmp_{package_name}/{package_name}", f"/usr/local/bin/{package_name}")
     # Delete the original file after copying
     os.remove(f"tmp_{package_name}/{package_name}")
@@ -77,6 +81,7 @@ def install_package(package_name, version):
     os.remove(f"{package_name}_v{version}.tar.gz")
     print(f"{package_name} version {version} installed.")
 
+
 def install():
     """
     ## This function installs the base packages.
@@ -84,4 +89,4 @@ def install():
     for scanner, version in scanners.items():
         version = set_versions(scanner)
         print(f"Installing {scanner} version {version}...")
-        install_package(scanner,version)
+        install_package(scanner, version)

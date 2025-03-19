@@ -2,7 +2,7 @@
 
 set -xe
 
-if [ "$CODESPACES" = "true" ]; then
+if [[ "${CODESPACES}" = "true" ]]; then
   # NOTE: This is the only way I managed to have the right
   # permissions files for git sources files
   # (Some salt pylint test check file permissions and expected 644
@@ -19,10 +19,11 @@ fi
 echo "Updating localtime"
 sudo ln -fs /usr/share/zoneinfo/UTC /etc/localtime
 
-# Install act
-gh extension install https://github.com/nektos/gh-act
+echo "Install pre-commit hooks"
+pre-commit install --install-hooks
 
-# Install dependencies
 echo "Installing dependencies"
-python3 src/main.py install
+# Run with sudo and preserved environment
+sudo PATH="${PATH}" python3 src/main.py install
+
 echo "End of setup"
