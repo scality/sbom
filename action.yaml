@@ -6,35 +6,49 @@ branding:
   color: blue
   icon: shield
 inputs:
-  grype-version:
+  grype_version:
     description: "The version of grype to use"
     required: false
 
-  syft-version:
+  syft_version:
     description: "The version of syft to use"
-    required: false
-
-  trivy-version:
-    description: "The version of trivy to use"
     required: false
 
   target:
     description: "The target to scan"
-    required: false
-    default: "./"
+    required: true
 
-  format:
+  target_type:
+    description: "The type of target to scan"
+    required: false
+    options:
+      - file
+      - image
+      - iso
+
+  output_format:
     description: "The SBOM format to export"
     required: false
-    default: "cyclonedx-json"
+    options:
+      - cyclonedx-json
+      - cyclonedx-xml
+      - spdx-json
+      - spdx
 
-  output-dir:
-    description: "A directory to store the SBOM"
+  output_file:
+    description: "A file location to store the SBOM"
     required: false
-    default: "/tmp/sbom"
 
-  exclude-mediatypes:
+  output_dir:
+    description: "A directory location to store the SBOM"
+    required: false
+
+  exclude_mediatypes:
     description: "Exclude specific media types from the SBOM"
+    required: false
+
+  distro:
+    description: "The Linux distribution of the target, if not detected"
     required: false
 
   name:
@@ -45,11 +59,26 @@ inputs:
     description: "The version of the target, if not detected"
     required: false
 
-  vuln-report:
-    description: "Generate vulnerability report"
+  vuln:
+    description: "Check for vulnerabilities"
     required: false
-    default: false
     type: boolean
+
+  vuln_output_format:
+    description: "Vulnerability output format"
+    required: false
+    options:
+      - json
+      - table
+      - sarif
+      - cyclonedx-json
+      - cyclonedx
+      - html
+      - junit
+
+  vuln_output_file:
+    description: "A file location to store the vulnerability report"
+    required: false
 
 runs:
   using: "composite"
@@ -57,13 +86,17 @@ runs:
     - name: Install Python 3
       uses: actions/setup-python@v5
       with:
-        python-version: "3.10"
+        python-version: "3.13"
         cache: "pip"
 
     - name: Install python deps
       shell: bash
       run: |
-        pip install -r ${{ github.action_path }}/requirements.txt
+        if [ -f "${{ github.action_path }}/requirements.txt" ]; then
+          pip install -r "${{ github.action_path }}/requirements.txt"
+        else
+          echo "No requirements.txt found; skipping Python dependencies installation."
+        fi
 
     - name: Install dependencies
       shell: bash
@@ -76,17 +109,26 @@ runs:
           p7zip-full \
           python3-setuptools
 
+    - name: Install scanners
+      shell: bash
+      env:
+        INPUT_GRYPE_VERSION: ${{ inputs.grype_version }}
+        INPUT_SYFT_VERSION: ${{ inputs.syft_version }}
+      run: python3 ${{ github.action_path }}/src/main.py install
+
     - name: Run the scan
       shell: bash
       env:
-        GRYPE_VERSION: ${{ inputs.grype-version }}
-        SYFT_VERSION: ${{ inputs.syft-version }}
-        TRIVY_VERSION: ${{ inputs.trivy-version }}
-        TARGET: ${{ inputs.target }}
-        FORMAT: ${{ inputs.format }}
-        OUTPUT_DIR: ${{ inputs.output-dir }}
-        EXCLUDE_MEDIATYPES: ${{ inputs.exclude-mediatypes }}
-        NAME: ${{ inputs.name }}
-        VERSION: ${{ inputs.version }}
-        VULN_REPORT: ${{ inputs.vuln-report }}
-      run: python3 ${{ github.action_path }}/src/main.py
+        INPUT_TARGET: ${{ inputs.target }}
+        INPUT_TARGET_TYPE: ${{ inputs.target_type }}
+        INPUT_OUTPUT_FORMAT: ${{ inputs.output_format }}
+        INPUT_OUTPUT_FILE: ${{ inputs.output_file }}
+        INPUT_OUTPUT_DIR: ${{ inputs.output_dir }}
+        INPUT_EXCLUDE_MEDIATYPES: ${{ inputs.exclude_mediatypes }}
+        INPUT_DISTRO: ${{ inputs.distro }}
+        INPUT_NAME: ${{ inputs.name }}
+        INPUT_VERSION: ${{ inputs.version }}
+        INPUT_VULN: ${{ inputs.vuln }}
+        INPUT_VULN_OUTPUT_FORMAT: ${{ inputs.vuln_output_format }}
+        INPUT_VULN_OUTPUT_FILE: ${{ inputs.vuln_output_file }}
+      run: python3 ${{ github.action_path }}/src/main.py scan

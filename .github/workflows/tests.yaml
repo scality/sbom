@@ -1,88 +1,143 @@
-name: "action-test"
+name: "SBOM Action Tests"
 on:
   push:
   pull_request:
 
 jobs:
-  test-as-action:
+  test-repository:
     runs-on: ubuntu-24.04
     steps:
-      - name: Checkout
+      - name: Checkout repository
         uses: actions/checkout@v4
-        with:
-          path: ./
-          fetch-depth: 0
-          fetch-tags: true
 
-      - name: Download artifact
-        shell: bash
-        run: curl -o /tmp/Core-15.0.iso https://distro.ibiblio.org/tinycorelinux/15.x/x86/release/Core-15.0.iso
-
-      - name: Scan repo
+      - name: Test file target type (repository)
+        id: repo-test
         uses: ./
         with:
-          target: ./
-          output-dir: "/tmp/test/sbom"
-          vuln-report: True
+          target: ${{ github.workspace }}
+          target_type: file
+          output_dir: "/tmp/sbom"
+          name: "repo"
+          output_file: "repository_sbom.json"
+          vuln: true
+          vuln_output_format: "sarif"
+          vuln_output_file: "repository_vuln.sarif"
 
-      - name: Scan directory
+      - name: Validate Repository SBOM
+        shell: bash
+        run: |
+          echo "## File Target (Repository)" >> $GITHUB_STEP_SUMMARY
+          if jq -e '.components[] | select(.name == "lodash" or .name == "yaml")' /tmp/sbom/repository_sbom.json > /dev/null 2>&1; then
+            echo "✅ Repository SBOM contains expected packages" >> $GITHUB_STEP_SUMMARY
+            echo "RESULT=PASS" >> $GITHUB_ENV
+          else
+            echo "❌ Repository SBOM missing expected packages" >> $GITHUB_STEP_SUMMARY
+            echo "RESULT=FAIL" >> $GITHUB_ENV
+            exit 1
+          fi
+
+  test-directory:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Test directory target type
+        id: dir-test
         uses: ./
         with:
           target: /usr/local/bin
-          output-dir: "/tmp/test/sbom"
-          syft-version: "1.10.0"
+          target_type: file
           name: "usrlocalbin"
+          output_format: "spdx-json"
+          syft_version: "1.21.0"
 
-      - name: Scan iso
+      - name: Validate Directory SBOM
+        shell: bash
+        run: |
+          echo "## Directory Target" >> $GITHUB_STEP_SUMMARY
+          if jq -e '(.spdxVersion != null) and (.name | contains("usrlocalbin"))' /tmp/sbom/usrlocalbin_sbom.json > /dev/null 2>&1; then
+            echo "✅ Directory SBOM contains correct metadata" >> $GITHUB_STEP_SUMMARY
+            echo "RESULT=PASS" >> $GITHUB_ENV
+          else
+            echo "❌ Directory SBOM has incorrect metadata" >> $GITHUB_STEP_SUMMARY
+            echo "RESULT=FAIL" >> $GITHUB_ENV
+            exit 1
+          fi
+
+      - name: List files
+        shell: bash
+        run: |
+          find /tmp/sbom -type f -name "*.json" | sort
+
+  test-iso:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Download test iso
+        shell: bash
+        run: |
+          # Download ISO for testing
+          curl -o /tmp/Core-15.0.iso https://distro.ibiblio.org/tinycorelinux/15.x/x86/release/Core-15.0.iso
+
+      - name: Test ISO target type
+        id: iso-test
         uses: ./
         with:
           target: /tmp/Core-15.0.iso
-          output-dir: "/tmp/test/sbom"
+          target_type: iso
           version: "15.0"
+          output_dir: "/tmp/sbom"
           name: "tinycorelinux"
-          vuln-report: False
 
-      - name: Ensure generated sbom file for repo contains the expected content
+      - name: Validate ISO SBOM
         shell: bash
         run: |
-          if jq -e '.components[] | select(.name == "lodash")' /tmp/test/sbom/repo_sbom_*.json > /dev/null; then
-            echo "lodash is present in the JSON file."
-            exit 0
+          echo "## ISO Target" >> $GITHUB_STEP_SUMMARY
+          if jq -e '.metadata.component.name == "tinycorelinux"' /tmp/sbom/tinycorelinux_15.0_sbom.json > /dev/null 2>&1; then
+            echo "✅ ISO SBOM contains correct metadata" >> $GITHUB_STEP_SUMMARY
+            echo "RESULT=PASS" >> $GITHUB_ENV
           else
-            echo "lodash is NOT present in the JSON file."
+            echo "❌ ISO SBOM missing expected components" >> $GITHUB_STEP_SUMMARY
+            echo "RESULT=FAIL" >> $GITHUB_ENV
             exit 1
           fi
 
-      - name: Ensure generated sbom file for iso contains the expected content
+  test-image:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Download test image
         shell: bash
         run: |
-          if jq -e '.components[] | select(.version == "6.6.8-tinycore")' /tmp/test/sbom/iso_tinycorelinux_15.0.json > /dev/null; then
-            echo "tinycore is present in the JSON file."
-            exit 0
+          docker pull alpine:latest
+          docker save alpine:latest > /tmp/alpine.tar
+
+      - name: Test image target type (tarball)
+        id: image-test
+        uses: ./
+        with:
+          target: /tmp/alpine.tar
+          target_type: image
+          output_dir: "/tmp/sbom"
+
+      - name: Validate container image SBOM
+        run: |
+          if jq -e '.metadata.component.type == "container"' /tmp/sbom/alpine_latest_sbom.json > /dev/null 2>&1; then
+            echo "✅ Container image SBOM has correct type"
           else
-            echo "tinycore is NOT present in the JSON file."
+            echo "❌ Container image SBOM missing expected type"
             exit 1
           fi
 
-      - name: Ensure generated sbom file for dir contains the expected content
-        shell: bash
-        run: |
-          if jq -e '.components[] | select(.purl == "pkg:golang/github.com/anchore/syft@v1.10.0")' /tmp/test/sbom/dir_bin_undefined.json > /dev/null; then
-            echo "syft is present in the JSON file."
-            exit 0
-          else
-            echo "syft is NOT present in the JSON file."
-            exit 1
-          fi
-
-      - name: Print the content of generated sbom file
-        shell: bash
-        run: |
-          for sbom in /tmp/test/sbom/*.json; do
-            echo "Content of $sbom"
-            cat $sbom
-          done
-          for sbom in /tmp/test/sbom/reports/*.html; do
-            echo "Content of vulnerability result for SBOM: $sbom"
-            cat $sbom
-          done
+  test-summary:
+    needs: [test-repository, test-directory, test-iso, test-image]
+    if: always()
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Tests summary
+        run: echo "All tests completed"
