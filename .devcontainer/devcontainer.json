@@ -30,7 +30,9 @@
         //Git history
         "donjayamanne.githistory",
         //Git blame
-        "solomonkinard.git-blame"
+        "solomonkinard.git-blame",
+        //Mermaid support
+        "bierner.markdown-mermaid"
       ],
       "settings": {
         "terminal.integrated.profiles.linux": {

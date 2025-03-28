@@ -1,4 +1,9 @@
 #!/usr/bin/env python3
+""""
+Update scanner versions in the install.py file.
+This script fetches the latest release versions of the specified scanners
+from their GitHub repositories and updates the version strings in the
+install.py file."""
 
 import re
 import requests
@@ -7,29 +12,66 @@ import requests
 scanners = {
     "syft": "anchore/syft",
     "grype": "anchore/grype",
-    "trivy": "aquasecurity/trivy"
 }
 
 def get_latest_release(repo):
+    """Fetch the latest release version from a GitHub repository."""
     url = f"https://api.github.com/repos/{repo}/releases/latest"
-    response = requests.get(url)
+    response = requests.get(url, timeout=10)
     response.raise_for_status()
     return response.json()["tag_name"].lstrip("v")
 
 def update_versions(file_path):
-    with open(file_path, "r") as file:
+    """Update the scanner versions in the specified file."""
+    with open(file_path, "r", encoding="utf8") as file:
         content = file.read()
 
-    for scanner, repo in scanners.items():
-        latest_version = get_latest_release(repo)
-        content = re.sub(
-            f'("{scanner}": ")([^"]+)',
-            lambda match: f'{match.group(1)}{latest_version}',
-            content
-        )
+    # Find the scanners dictionary block
+    scanners_pattern = r"scanners = \{(.*?)\}"
+    scanners_match = re.search(scanners_pattern, content, re.DOTALL)
 
-    with open(file_path, "w") as file:
-        file.write(content)
+    if not scanners_match:
+        raise ValueError("Could not find scanners dictionary in the file")
+
+    scanners_block = scanners_match.group(0)
+    updated_block = scanners_block
+    updates_made = False
+
+    for scanner, repo in scanners.items():
+        # Extract current version from the file
+        current_version_pattern = rf'"{scanner}": "([0-9]+\.[0-9]+\.[0-9]+)"'
+        current_version_match = re.search(current_version_pattern, scanners_block)
+        current_version = current_version_match.group(1) if current_version_match else "unknown"
+
+        # Get latest version from GitHub
+        latest_version = get_latest_release(repo)
+
+        # Compare versions
+        if current_version == latest_version:
+            print(f"✓ {scanner} is already at latest version {latest_version}")
+            continue
+
+        # Version is different, update needed
+        print(f"⬆ Updating {scanner} from {current_version} to {latest_version}")
+        updates_made = True
+
+        # Build pattern and replacement
+        scanner_pattern = rf'("{scanner}": ")([0-9]+\.[0-9]+\.[0-9]+)'
+
+        # Use replacement function for consistent behavior
+        def replacement_func(match):
+            return match.group(1) + latest_version
+
+        updated_block = re.sub(scanner_pattern, replacement_func, updated_block)
+
+    # Only write to file if changes were made
+    if updates_made:
+        content = content.replace(scanners_block, updated_block)
+        with open(file_path, "w", encoding="utf8") as file:
+            file.write(content)
+        print("✓ Updates applied to", file_path)
+    else:
+        print("✓ All scanners are already at their latest versions. No updates needed.")
 
 if __name__ == "__main__":
-    update_versions("src/lib/install.py")
+    update_versions("src/modules/install.py")

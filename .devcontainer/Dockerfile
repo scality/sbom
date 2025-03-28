@@ -8,6 +8,7 @@ RUN export DEBIAN_FRONTEND=noninteractive && \
         bash-completion \
         curl \
         git \
+        libmagic1 \
         libsqlite3-dev \
         python3 \
         python3-pip \

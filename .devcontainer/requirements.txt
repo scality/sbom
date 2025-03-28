@@ -3,3 +3,5 @@ GitPython==3.1.44
 pyunpack==0.3
 patool==4.0.0
 pre-commit==4.1.0
+click==8.1.8
+python-magic==0.4.27

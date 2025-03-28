@@ -11,46 +11,6 @@ permissions:
   contents: read
 
 jobs:
-  update-scanners:
-    runs-on: ubuntu-24.04
-    steps:
-
-      - name: Create github token
-        uses: actions/create-github-app-token@v1
-        id: app-token
-        with:
-          app-id: ${{ vars.ACTIONS_APP_ID }}
-          private-key: ${{ secrets.ACTIONS_APP_PRIVATE_KEY }}
-          owner: ${{ github.repository_owner }}
-
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          token: ${{ steps.app-token.outputs.token }}
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: 3.12
-
-      - name: Install dependencies
-        run: pip install requests
-
-      - name: Update scanner versions
-        run: python .github/scripts/update_scanners.py
-
-      - name: Create pull request  
-        uses: actions/github-script@v7  
-        with:  
-          script: |
-            const pr = await github.rest.pulls.create({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              head: "feature/deps-update",
-              base: "main",
-              title: ":arrow_up: Update scanner versions"
-            })
-
   vuln-scan:
     permissions:
       contents: read # for actions/checkout to fetch code
@@ -65,23 +25,17 @@ jobs:
           fetch-tags: true
 
       - name: Create SBOM
-        uses: anchore/sbom-action@v0
+        uses: ./
         with:
-          path: ./
-          format: cyclonedx-json
-          output-file: "${{ github.event.repository.name }}-sbom.cdx.json"
-
-      - name: Scan SBOM
-        uses: anchore/scan-action@v6
-        id: scan
-        with:
-          sbom: "${{ github.event.repository.name }}-sbom.cdx.json"
-          output-format: sarif
-          fail-build: false
-          add-cpes-if-none: true
-          by-cve: true
+          target: ./
+          target_type: file
+          output_format: cyclonedx-json
+          output_file: "/tmp/sbom/sbom.cdx.json"
+          vuln: true
+          vuln_output_format: sarif
+          vuln_output_file: "/tmp/sbom/sbom.sarif"
 
       - name: Upload SARIF report
         uses: github/codeql-action/upload-sarif@v3
         with:
-          sarif_file: ${{ steps.scan.outputs.sarif }}
+          sarif_file: "/tmp/sbom/sbom.sarif"
