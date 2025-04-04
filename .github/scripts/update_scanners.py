@@ -3,13 +3,14 @@
 Update scanner versions in the install.py file.
 This script fetches the latest release versions of the specified scanners
 from their GitHub repositories and updates the version strings in the
-install.py file."""
+install.py file.
+"""
 
 import re
 import requests
 
 # Define the scanners and their GitHub repositories
-scanners = {
+SCANNERS = {
     "syft": "anchore/syft",
     "grype": "anchore/grype",
 }
@@ -23,12 +24,13 @@ def get_latest_release(repo):
 
 def update_versions(file_path):
     """Update the scanner versions in the specified file."""
+    content = None
     with open(file_path, "r", encoding="utf8") as file:
         content = file.read()
 
-    # Find the scanners dictionary block
-    scanners_pattern = r"scanners = \{(.*?)\}"
-    scanners_match = re.search(scanners_pattern, content, re.DOTALL)
+        # Find the scanners dictionary block
+        scanners_pattern = r"SCANNERS = \{(.*?)\}"
+        scanners_match = re.search(scanners_pattern, content, re.DOTALL)
 
     if not scanners_match:
         raise ValueError("Could not find scanners dictionary in the file")
@@ -37,7 +39,7 @@ def update_versions(file_path):
     updated_block = scanners_block
     updates_made = False
 
-    for scanner, repo in scanners.items():
+    for scanner, repo in SCANNERS.items():
         # Extract current version from the file
         current_version_pattern = rf'"{scanner}": "([0-9]+\.[0-9]+\.[0-9]+)"'
         current_version_match = re.search(current_version_pattern, scanners_block)
@@ -58,20 +60,21 @@ def update_versions(file_path):
         # Build pattern and replacement
         scanner_pattern = rf'("{scanner}": ")([0-9]+\.[0-9]+\.[0-9]+)'
 
-        # Use replacement function for consistent behavior
-        def replacement_func(match):
-            return match.group(1) + latest_version
+        # Use lambda for replacement
+        updated_block = re.sub(
+            scanner_pattern,
+            lambda match, version=latest_version: match.group(1) + version, updated_block)
 
-        updated_block = re.sub(scanner_pattern, replacement_func, updated_block)
-
-    # Only write to file if changes were made
-    if updates_made:
-        content = content.replace(scanners_block, updated_block)
-        with open(file_path, "w", encoding="utf8") as file:
-            file.write(content)
-        print("✓ Updates applied to", file_path)
-    else:
+    # If no updates were made, print and return
+    if not updates_made:
         print("✓ All scanners are already at their latest versions. No updates needed.")
+        return
+
+    # Write to file if changes were made
+    content = content.replace(scanners_block, updated_block)
+    with open(file_path, "w", encoding="utf8") as file:
+        file.write(content)
+    print("✓ Updates applied to", file_path)
 
 if __name__ == "__main__":
     update_versions("src/modules/install.py")

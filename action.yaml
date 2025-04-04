@@ -92,7 +92,11 @@ runs:
     - name: Install python deps
       shell: bash
       run: |
-        pip install -r ${{ github.action_path }}/requirements.txt
+        if [ -f "${{ github.action_path }}/requirements.txt" ]; then
+          pip install -r "${{ github.action_path }}/requirements.txt"
+        else
+          echo "No requirements.txt found; skipping Python dependencies installation."
+        fi
 
     - name: Install dependencies
       shell: bash

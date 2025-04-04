@@ -92,6 +92,7 @@ class SyftScanner:
                 "Empty output format received, using default: cyclonedx-json"
             )
             output_format = "cyclonedx-json"
+
         logging.info("Output format: %s", output_format)
         file_extension = get_output_file_extension(output_format)
 
@@ -109,6 +110,7 @@ class SyftScanner:
         # Add source name and version if provided and not None
         if "name" in scanner_args and scanner_args["name"] is not None:
             cmd.extend(["--source-name", scanner_args["name"]])
+
         if "version" in scanner_args and scanner_args["version"] is not None:
             cmd.extend(["--source-version", scanner_args["version"]])
 

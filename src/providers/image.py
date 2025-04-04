@@ -42,10 +42,11 @@ class ImageProvider(BaseProvider):
         target = inputs.get("target", self.target)
 
         # Determine if we're dealing with a single image or directory
-        if not os.path.isdir(target) or not self._contains_images(target):
-            result = self._scan_single_image(target)
-        else:
+
+        if os.path.isdir(target) or self._contains_images(target):
             result = self._scan_image_directory(target)
+
+        result = self._scan_single_image(target)
 
         return result
 
@@ -72,7 +73,7 @@ class ImageProvider(BaseProvider):
         ### Returns:
             List of excluded media types
         """
-        excluded_types = self.inputs.get("exclude_mediatypes", "")
+        excluded_types = self.inputs.get("exclude_mediatypes")
         return excluded_types.split(",") if excluded_types else []
 
     @staticmethod
@@ -86,6 +87,7 @@ class ImageProvider(BaseProvider):
         """
         if os.path.exists(os.path.join(directory, "images")):
             return True
+
         return any(
             os.path.isdir(os.path.join(directory, d)) for d in os.listdir(directory)
         )
@@ -101,14 +103,14 @@ class ImageProvider(BaseProvider):
         # Extract image name and version for naming
         image_name = ""
         image_version = "latest"
+        # Initialize image_with_path with the target
+        image_with_path = target
 
         # Handle Docker image references
         if ":" in target:
             parts = target.split(":")
             image_with_path = parts[0]
             image_version = parts[1]
-        else:
-            image_with_path = target
 
         # For output file, keep short name
         if "/" in image_with_path:
@@ -139,6 +141,7 @@ class ImageProvider(BaseProvider):
         # Only add name/version if explicitly provided in inputs
         if self.name:
             scanner_args["name"] = self.name
+
         if self.version:
             scanner_args["version"] = self.version
 
@@ -178,7 +181,7 @@ class ImageProvider(BaseProvider):
 
             return {
                 "success": True,
-                "scanned_images": list(results.keys()),
+                "scanned_images": results.keys(),
                 "results": results,
             }
         except RuntimeError as error:
@@ -229,9 +232,9 @@ class ImageProvider(BaseProvider):
         image_dir_clean = image_dir.rstrip("/")
 
         source_name = os.path.basename(source_clean) or "unknown"
-        image_name = os.path.basename(image_dir_clean) or "unknown"
-
         logging.info("Source name: %s", source_name)
+
+        image_name = os.path.basename(image_dir_clean) or "unknown"
         logging.info("Image name: %s", image_name)
 
         return source_name, image_name

@@ -20,9 +20,11 @@ def detect_image_origin(path):
         if os.path.isfile(os.path.join(path, "oci-layout")):
             logging.info("%s is an OCI image.", path)
             return "oci"
+
         if os.path.isfile(os.path.join(path, "manifest.json")):
             logging.info("%s is a Docker image.", path)
             return "docker"
+
     if path.endswith(".tar"):
         with tarfile.open(path) as tar:
             for member in tar.getmembers():
@@ -49,6 +51,7 @@ def convert_image_to_oci(image_dir, convert_dir):
     if convert_dir is not None:
         converted_image_dir = convert_dir
         os.makedirs(converted_image_dir, exist_ok=True)
+
     if detect_image_origin(image_dir) == "docker":
         subprocess.run(
             [
@@ -67,6 +70,7 @@ def convert_image_to_oci(image_dir, convert_dir):
             "Converted %s to OCI format at: %s", image_dir, converted_image_dir
         )
         return converted_image_dir
+
     if detect_image_origin(image_dir) == "oci":
         logging.info("%s is already in OCI format.", image_dir)
         return image_dir  # Return the original path since it's already OCI
@@ -95,22 +99,25 @@ def check_mediatype(image_dir, excluded_mediatypes=None):
         media_types = []
         if "config" in data and "mediaType" in data["config"]:
             media_types.append(data["config"]["mediaType"])
+
         if "layers" in data:
             for layer in data["layers"]:
                 if "mediaType" in layer:
                     media_types.append(layer["mediaType"])
 
-        excluded_types = {
+        excluded_types = [
             media_type
             for media_type in media_types
             if media_type in excluded_mediatypes
-        }
+        ]
+
         if excluded_types:
             logging.info(
-                "Excluded media types found: %s in %s", list(excluded_types), image_dir
+                "Excluded media types found: %s in %s", excluded_types, image_dir
             )
             excluded = True
         else:
             logging.info("No excluded media types found in %s", image_dir)
             excluded = False
+
     return excluded

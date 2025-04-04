@@ -22,8 +22,8 @@ def get_provider(inputs: Dict[str, Any]) -> BaseProvider:
         "file": FileProvider,
     }
 
-    if inputs.get("target_type") in _type_to_provider:
-        provider_class = _type_to_provider[inputs["target_type"]]
-        return provider_class(inputs)
+    if inputs.get("target_type") not in _type_to_provider:
+        raise ValueError(f"Unsupported target type: {inputs['target_type']}")
 
-    raise ValueError(f"Unsupported target type: {inputs['target_type']}")
+    provider_class = _type_to_provider[inputs["target_type"]]
+    return provider_class(inputs)

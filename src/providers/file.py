@@ -41,6 +41,7 @@ class FileProvider(BaseProvider):
         if self._isdir(target):
             # If the target is a directory, return the directory name
             return os.path.basename(os.path.normpath(target))
+
         return os.path.splitext(os.path.basename(target))[0]
 
     def _get_rpm_info(self, rpm_path):

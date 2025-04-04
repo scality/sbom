@@ -10,13 +10,13 @@ import requests
 from pyunpack import Archive
 
 # Define the scanners and their versions
-scanners = {
+SCANNERS = {
     "syft": "1.22.0",
     "grype": "0.91.0",
 }
 
 # Define editors for each package
-editors = {
+EDITORS = {
     "syft": "anchore",
     "grype": "anchore",
 }
@@ -27,7 +27,6 @@ ARTIFACTS = {
     "syft": "{package_name}_{version}_linux_amd64.tar.gz",
     "grype": "{package_name}_{version}_linux_amd64.tar.gz",
 }
-
 INSTALL_DIR = "/usr/local/bin"
 
 
@@ -39,7 +38,7 @@ def find_editor(package_name):
     ### Returns:
         str: Editor name
     """
-    return editors.get(package_name)
+    return EDITORS.get(package_name)
 
 
 def set_versions(scanner_versions, package_name):
@@ -52,15 +51,16 @@ def set_versions(scanner_versions, package_name):
         - `version (string)`: Version of the package
     """
     version = scanner_versions.get(f"{package_name}_version")
+
     if version:
         logging.info(
             "Using version %s for %s from scanner versions.", version, package_name
         )
         return version
-    logging.info(
-        "Using default version %s for %s.", scanners[package_name], package_name
-    )
-    return scanners[package_name]
+
+    default_version = SCANNERS[package_name]
+    logging.info("Using default version %s for %s.", default_version, package_name)
+    return default_version
 
 
 def check_permissions():
@@ -69,9 +69,7 @@ def check_permissions():
     ### Returns:
         - `bool`: True if the user has root permissions, False otherwise
     """
-    if os.geteuid() != 0:
-        return False
-    return True
+    return os.geteuid() == 0
 
 
 def check_package_version(package_name, version):
@@ -202,16 +200,17 @@ def download_file(url, output_path, package_name=None, version=None, verify=True
 
     with open(output_path, "wb") as f:
         for chunk in response.iter_content(chunk_size=8192):
-            if chunk:
-                f.write(chunk)
-                downloaded += len(chunk)
-                # Simple progress reporting
-                if total_size > 0:
-                    percent = int(100 * downloaded / total_size)
-                    print(
-                        f"\rProgress: {percent}% ({downloaded}/{total_size} bytes)",
-                        end="",
-                    )
+            if not chunk:
+                break
+            f.write(chunk)
+            downloaded += len(chunk)
+            # Simple progress reporting
+            if total_size > 0:
+                percent = int(100 * downloaded / total_size)
+                print(
+                    f"\rProgress: {percent}% ({downloaded}/{total_size} bytes)",
+                    end="",
+                )
 
     if total_size > 0:
         print()  # New line after progress
@@ -303,7 +302,7 @@ def install_scanners(scanner_versions):
     ### Args:
         - `scanner_versions (dict)`: Dictionary of scanner versions
     """
-    for package_name in scanners:
+    for package_name in SCANNERS:
         version = set_versions(scanner_versions, package_name)
         if not check_package_version(package_name, version):
             install_package(package_name, version)

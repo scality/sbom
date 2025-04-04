@@ -26,3 +26,4 @@ class BaseProvider(ABC):  # pylint: disable=too-few-public-methods
         ### Returns:
             Path to the generated SBOM file
         """
+        raise NotImplementedError("Subclasses must implement this method")

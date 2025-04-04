@@ -24,6 +24,7 @@ class GrypeScanner:
         """
         os.environ["GRYPE_SEARCH_SCOPE"] = "all-layers"
         os.environ["GRYPE_LOG_LEVEL"] = "info"
+        os.environ["GRYPE_PRETTY"] = "true"
 
     def determine_output_file(  # pylint: disable=too-many-arguments, too-many-positional-arguments, too-many-return-statements
         self, target, scanner_args, inputs, output_dir, file_extension

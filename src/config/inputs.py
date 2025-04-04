@@ -2,6 +2,18 @@
 
 import os
 
+FORMAT_EXTENSIONS = {
+    "json": "json",
+    "table": "txt",
+    "sarif": "sarif",
+    "html": "html",
+    "cyclonedx": "xml",
+    "cyclonedx-json": "json",
+    "spdx-json": "json",
+    "junit": "xml",
+    "csv": "csv",
+}
+
 
 def get_inputs():
     """Get the inputs from the Github action."""
@@ -13,10 +25,10 @@ def get_inputs():
         "output_format": os.environ.get("INPUT_OUTPUT_FORMAT", "cyclonedx-json"),
         "output_file": os.environ.get("INPUT_OUTPUT_FILE"),
         "output_dir": os.environ.get("INPUT_OUTPUT_DIR", "/tmp/sbom"),
-        "exclude_mediatypes": os.environ.get("INPUT_EXCLUDE_MEDIATYPES"),
+        "exclude_mediatypes": os.environ.get("INPUT_EXCLUDE_MEDIATYPES", None),
         "distro": os.environ.get("INPUT_DISTRO"),
-        "name": os.environ.get("INPUT_NAME"),
-        "version": os.environ.get("INPUT_VERSION"),
+        "name": os.environ.get("INPUT_NAME", None),
+        "version": os.environ.get("INPUT_VERSION", None),
         "vuln": os.environ.get("INPUT_VULN", "false").lower() == "true",
         "vuln_output_format": os.environ.get("INPUT_VULN_OUTPUT_FORMAT", "json"),
         "vuln_output_file": os.environ.get("INPUT_VULN_OUTPUT_FILE"),
@@ -24,21 +36,11 @@ def get_inputs():
 
 
 def get_output_file_extension(desired_format):
-    """Get the output file extension for the given format
+    """
+    Get the output file extension for the given format
     Args:
         format (str): The format to get the extension for
     Returns:
         str: The file extension for the given format
     """
-    format_extensions = {
-        "json": "json",
-        "table": "txt",
-        "sarif": "sarif",
-        "html": "html",
-        "cyclonedx": "xml",
-        "cyclonedx-json": "json",
-        "spdx-json": "json",
-        "junit": "xml",
-        "csv": "csv",
-    }
-    return format_extensions.get(desired_format, "json")
+    return FORMAT_EXTENSIONS.get(desired_format, "json")

@@ -8,13 +8,21 @@ from modules.install import install_scanners
 from providers.factory import get_provider
 
 # Configure logging to show INFO level messages
-logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s][%(name)s][%(funcName)s] %(levelname)s: %(message)s",
+)
 
 
 @click.group()
 @click.version_option()
 def cli():
-    """Scality SBOM Github Action."""
+    """
+    # SBOM Github Action CLI
+    This is a command line interface for the SBOM Github Action.
+    It allows you to install the required scanners and scan a target.
+    """
+    click.echo("Welcome to the SBOM Github Action CLI!")
 
 
 @cli.command()
@@ -32,6 +40,7 @@ def install():
         "syft_version": inputs.get("syft_version"),
         "grype_version": inputs.get("grype_version"),
     }
+
     install_scanners(scanner_versions)
 
 
