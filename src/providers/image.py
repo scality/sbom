@@ -42,11 +42,10 @@ class ImageProvider(BaseProvider):
         target = inputs.get("target", self.target)
 
         # Determine if we're dealing with a single image or directory
-
-        if os.path.isdir(target) or self._contains_images(target):
+        if not os.path.isdir(target) or not self._contains_images(target):
+            result = self._scan_single_image(target)
+        else:
             result = self._scan_image_directory(target)
-
-        result = self._scan_single_image(target)
 
         return result
 
