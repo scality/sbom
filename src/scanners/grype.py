@@ -9,12 +9,13 @@ from config.inputs import get_inputs, get_output_file_extension
 class GrypeScanner:
     """Scanner implementation for Grype."""
 
+    BASE_TEMPLATE_PATH = os.getenv("GITHUB_ACTION_PATH", os.getcwd())
     # Map format types to appropriate file extensions
     TEMPLATES_PATH = {
-        "csv": "src/config/templates/csv.tmpl",
-        "html": "src/config/templates/html.tmpl",
-        "junit": "src/config/templates/junit.tmpl",
-        "table": "src/config/templates/table.tmpl",
+        "csv": os.path.join(BASE_TEMPLATE_PATH, "src/config/templates/csv.tmpl"),
+        "html": os.path.join(BASE_TEMPLATE_PATH, "src/config/templates/html.tmpl"),
+        "junit": os.path.join(BASE_TEMPLATE_PATH, "src/config/templates/junit.tmpl"),
+        "table": os.path.join(BASE_TEMPLATE_PATH, "src/config/templates/table.tmpl"),
     }
 
     def configure_grype(self):
@@ -25,6 +26,10 @@ class GrypeScanner:
         os.environ["GRYPE_SEARCH_SCOPE"] = "all-layers"
         os.environ["GRYPE_LOG_LEVEL"] = "info"
         os.environ["GRYPE_PRETTY"] = "true"
+
+        logging.info("Base template path: %s", self.BASE_TEMPLATE_PATH)
+        for fmt, path in self.TEMPLATES_PATH.items():
+            logging.info("Template for %s: %s", fmt, path)
 
     def determine_output_file(  # pylint: disable=too-many-arguments, too-many-positional-arguments, too-many-return-statements
         self, target, scanner_args, inputs, output_dir, file_extension
@@ -177,6 +182,13 @@ class GrypeScanner:
         # Handle template formats
         if report_format in self.TEMPLATES_PATH:
             template_path = self.TEMPLATES_PATH[report_format]
+            if not os.path.exists(template_path):
+                logging.error("Template file not found: %s", template_path)
+                return {
+                    "format": report_format,
+                    "success": False,
+                    "error": f"Template file not found: {template_path}",
+                }
             cmd.extend(["--template", template_path])
             cmd.extend(["-o", "template"])
             cmd.extend(["--file", output_file])
