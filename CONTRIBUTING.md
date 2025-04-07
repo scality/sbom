@@ -8,6 +8,30 @@ This project is configured to work with GitHub Codespaces. To open the project i
 
 [![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/scality/sbom)
 
+## Environment variables
+
+Example environment variables for running the action locally:
+
+```python
+import os
+###########################
+##### DEV ENVIROMENT ######
+### FILE
+os.environ["INPUT_TARGET"] = "samples/curl-7.61.1-34.el8_10.3.x86_64.rpm"
+os.environ["INPUT_TARGET_TYPE"] = "file"
+### IMAGE
+os.environ["INPUT_TARGET_TYPE"] = "image"
+os.environ["INPUT_TARGET"] = "cr.fluentbit.io/fluent/fluent-bit:3.0.0"
+### ISO
+os.environ["INPUT_TARGET_TYPE"] = "iso"
+os.environ["INPUT_TARGET"] = "samples/Core-15.0.iso"
+##############################
+os.environ["INPUT_OUTPUT_FORMAT"] = "cyclonedx-json"
+os.environ["INPUT_VULN"] = "true"
+os.environ["INPUT_VULN_OUTPUT_FORMAT"] = "html,cyclonedx-json"
+##########################
+```
+
 ## Run the action locally
 
 `act` can be used to run the GitHub Actions workflow locally.
