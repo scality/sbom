@@ -4,6 +4,7 @@ import os
 import subprocess
 import logging
 from config.inputs import get_inputs, FORMAT_EXTENSIONS
+from config.outputs import create_standard_result
 
 
 class GrypeScanner:
@@ -26,10 +27,6 @@ class GrypeScanner:
         os.environ["GRYPE_SEARCH_SCOPE"] = "all-layers"
         os.environ["GRYPE_LOG_LEVEL"] = "info"
         os.environ["GRYPE_PRETTY"] = "true"
-
-        logging.info("Base template path: %s", self.BASE_TEMPLATE_PATH)
-        for fmt, path in self.TEMPLATES_PATH.items():
-            logging.info("Template for %s: %s", fmt, path)
 
     def determine_output_file(  # pylint: disable=too-many-arguments, too-many-positional-arguments, too-many-return-statements
         self, target, scanner_args, inputs, output_dir, file_extension
@@ -111,9 +108,9 @@ class GrypeScanner:
         output_dir = inputs.get("output_dir") or "/tmp/sbom"
 
         # Initialize vuln_output_format properly
-        vuln_output_format = inputs.get("vuln_output_format", "json")
-        if not vuln_output_format or vuln_output_format == "":
-            vuln_output_format = inputs.get("output_format", "json")
+        vuln_output_format = inputs.get("vuln_output_format") or inputs.get(
+            "output_format", "cyclonedx-json"
+        )
 
         logging.info("Vulnerability output format: %s", vuln_output_format)
 
@@ -130,6 +127,7 @@ class GrypeScanner:
         logging.info("Output formats: %s", formats)
 
         results = {"success": True, "reports": {}}
+        paths = {}
 
         for report_format in formats:
             file_extension = FORMAT_EXTENSIONS.get(report_format, "json")
@@ -146,27 +144,30 @@ class GrypeScanner:
             )
             results["reports"][report_format] = report_result
 
-            # If any scan fails, mark the overall operation as failed
-            if not report_result.get("success", False):
-                results["success"] = False
+            if report_result.get("success", False):
+                paths[report_format] = report_result.get("vuln_path")
 
-        # Add overall information
-        results["vuln_paths"] = [
-            r.get("vuln_path")
-            for r in results["reports"].values()
-            if r.get("vuln_path")
-        ]
-
-        return results
+        # Build a standardized and flat output
+        return create_standard_result(
+            scanner="syft",
+            success=results.get("success", False),
+            target=target,
+            name=scanner_args.get("name"),
+            version=scanner_args.get("version"),
+            sbom_path=output_file if results.get("success") else None,
+            stdout=results.get("stdout"),
+            error=results.get("error"),
+            additional={"report": results},
+        )
 
     def _run_scan(self, target, report_format, output_file, scanner_args):
         """
-        ## Run the Grype scan."
+        ## Run the Grype scan.
         ### Args:
             target (str): The target to scan.
             report_format (str): The format of the report.
             output_file (str): The output file path.
-            scanner_args (dict): Additional arguments for the scanner."
+            scanner_args (dict): Additional arguments for the scanner.
         ### Returns:
             dict: The result of the scan.
         """
@@ -178,6 +179,11 @@ class GrypeScanner:
         distro_version = scanner_args.get("distro_version")
         if distro and distro_version:
             cmd.extend(["--distro", f"{distro}:{distro_version}"])
+
+        # Add name if available
+        name = scanner_args.get("name")
+        if name:
+            cmd.extend(["--name", name])
 
         # Handle template formats
         if report_format in self.TEMPLATES_PATH:
