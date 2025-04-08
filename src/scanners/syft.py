@@ -4,6 +4,7 @@ import os
 import subprocess
 import logging
 from config.inputs import get_inputs, FORMAT_EXTENSIONS
+from config.outputs import create_standard_result
 
 
 class SyftScanner:
@@ -23,7 +24,7 @@ class SyftScanner:
         os.environ["SYFT_LOG_STRUCTURED"] = "true"
         os.environ["SYFT_LOG_LEVEL"] = "info"
 
-    def determine_output_file(  # pylint: disable=too-many-positional-arguments, too-many-arguments
+    def determine_output_file(  # pylint: disable=too-many-arguments, too-many-positional-arguments
         self, target, scanner_args, inputs, output_dir, file_extension
     ):
         """
@@ -50,7 +51,6 @@ class SyftScanner:
         # 2. Second priority: name and version if available
         name = scanner_args.get("name")
         version = scanner_args.get("version")
-
         if name:
             if version:
                 return f"{output_dir}/{name}_{version}_sbom.{file_extension}"
@@ -67,6 +67,29 @@ class SyftScanner:
         target_basename = os.path.basename(target)
         target_name = os.path.splitext(target_basename)[0]
         return f"{output_dir}/{target_name}_sbom.{file_extension}"
+
+    def _run_scan(self, target, output_format, output_file, scanner_args):
+        cmd = ["syft", target]
+        if scanner_args.get("name") is not None:
+            cmd.extend(["--source-name", scanner_args.get("name")])
+        if scanner_args.get("version") is not None:
+            cmd.extend(["--source-version", scanner_args.get("version")])
+        cmd.extend(["-o", f"{output_format}={output_file}"])
+
+        logging.info("Running Syft command: %s", " ".join(cmd))
+        try:
+            result = subprocess.run(cmd, capture_output=True, text=True, check=True)
+            return {
+                "sbom_path": output_file,
+                "success": True,
+                "stdout": result.stdout,
+            }
+        except subprocess.CalledProcessError as e:
+            return {
+                "success": False,
+                "error": str(e),
+                "stderr": e.stderr,
+            }
 
     def scan(self, target, scanner_args):
         """
@@ -86,14 +109,15 @@ class SyftScanner:
         # Get format information
         output_dir = inputs.get("output_dir") or "/tmp/sbom"
         logging.info("Output directory: %s", output_dir)
+
         output_format = inputs.get("output_format")
         if not output_format:
             logging.warning(
                 "Empty output format received, using default: cyclonedx-json"
             )
             output_format = "cyclonedx-json"
-
         logging.info("Output format: %s", output_format)
+
         file_extension = FORMAT_EXTENSIONS.get(output_format, "json")
 
         # Ensure output directory exists
@@ -104,28 +128,17 @@ class SyftScanner:
             target, scanner_args, inputs, output_dir, file_extension
         )
 
-        # Create command
-        cmd = ["syft", target]
+        result = self._run_scan(target, output_format, output_file, scanner_args)
 
-        # Add source name and version if provided and not None
-        if "name" in scanner_args and scanner_args["name"] is not None:
-            cmd.extend(["--source-name", scanner_args["name"]])
-
-        if "version" in scanner_args and scanner_args["version"] is not None:
-            cmd.extend(["--source-version", scanner_args["version"]])
-
-        # Add output format and file
-        cmd.extend(["-o", f"{output_format}={output_file}"])
-
-        # Run the command
-        logging.info("Running Syft command: %s", " ".join(cmd))
-        try:
-            result = subprocess.run(cmd, capture_output=True, text=True, check=True)
-            return {
-                "sbom_path": output_file,
-                "target": target,
-                "success": True,
-                "stdout": result.stdout,
-            }
-        except subprocess.CalledProcessError as e:
-            return {"success": False, "error": str(e), "stderr": e.stderr}
+        # Build a standardized and flat output
+        return create_standard_result(
+            scanner="syft",
+            success=result.get("success", False),
+            target=target,
+            name=scanner_args.get("name"),
+            version=scanner_args.get("version"),
+            sbom_path=output_file if result.get("success") else None,
+            stdout=result.get("stdout"),
+            error=result.get("error"),
+            additional={"report": result},
+        )
