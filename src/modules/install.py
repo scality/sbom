@@ -1,73 +1,127 @@
-"""Module providing installation of required scanners"""
+"""Module providing installation of required tools for the project."""
 
+from pathlib import Path
 import logging
 import os
 import hashlib
 import tempfile
 import subprocess
 import shutil
+import yaml
 import requests
 from pyunpack import Archive
 
-# Define the scanners and their versions
-SCANNERS_VERSION = {
-    "syft": "1.22.0",
-    "grype": "0.91.0",
-}
+# Add the root directory to the Python path
+ROOT_DIR = Path(__file__).resolve().parents[2]
+VERSION_FILE = ROOT_DIR / "versions.yaml"
 
-# Define editors for each package
-SCANNERS_EDITORS = {
-    "syft": "anchore",
-    "grype": "anchore",
-}
 
+# Load package information from versions.yaml
+def load_packages():
+    """Load package configurations from versions.yaml file."""
+    try:
+        data = yaml.safe_load(VERSION_FILE.read_text(encoding="utf-8"))
+        return data
+    except (yaml.YAMLError, FileNotFoundError) as error:
+        logging.error("Failed to load versions.yaml: %s", str(error))
+        raise
+
+
+PACKAGES = load_packages().get("packages", {})
 BASE_URL = "https://github.com/{editor}/{name}/releases/download/v{version}/"
 CHECKSUMS = "{package_name}_{version}_checksums.txt"
-ARTIFACTS = {
-    "syft": "{package_name}_{version}_linux_amd64.tar.gz",
-    "grype": "{package_name}_{version}_linux_amd64.tar.gz",
-}
 INSTALL_DIR = "/usr/local/bin"
 
 
-def find_editor(package_name):
+def get_package_info(package_name):
     """
-    ## Find the editor (GitHub organization) for a package.
+    ## Get package information dictionary for a given package.
     ### Args:
         package_name (str): Name of the package
     ### Returns:
-        str: Editor name
+        dict: Package information (default_version, editor, artifact) or None if not found
     """
-    return SCANNERS_EDITORS.get(package_name)
+    return PACKAGES.get(package_name)
 
 
-def set_versions(scanner_versions, package_name):
+def set_versions(tool_versions, package_name):
     """
-    ## This function sets the versions of the scanners.
-        We retrieve scanner_versions from the Github action and set the versions of the scanners.
+    ## Set the package version.
+    Uses tool_versions from the GitHub Action inputs if provided, otherwise falls back
+    to the default version in PACKAGES.
     ### Args:
-        - `package_name (string)`: Name of the package
+        tool_versions (dict): Dictionary of tool versions
+        package_name (str): Name of the package
     ### Returns:
-        - `version (string)`: Version of the package
+        str: Version of the package
     """
-    version = scanner_versions.get(f"{package_name}_version")
+    info = get_package_info(package_name)
+    if not info:
+        raise ValueError(f"Package info not available for: {package_name}")
 
+    version = tool_versions.get(f"{package_name}_version")
     if version:
         logging.info(
-            "Using version %s for %s from scanner versions.", version, package_name
+            "Using version %s for %s from tool versions.", version, package_name
         )
         return version
 
-    default_version = SCANNERS_VERSION[package_name]
+    default_version = info["default_version"]
     logging.info("Using default version %s for %s.", default_version, package_name)
     return default_version
+
+
+def get_checksum(checksums_url, package_name, version, artifact_file):
+    """
+    ## Get the expected checksum for a package from the checksums file.
+    ### Args:
+        checksums_url (str): URL for the checksums file
+        package_name (str): Name of the package
+        version (str): Version of the package
+        artifact_file (str): Name of the artifact file
+    ### Returns:
+        str: Expected checksum or None if not found
+    """
+    info = get_package_info(package_name)
+    if not info:
+        return None
+
+    checksums_enabled = info.get("checksums", False)
+    if not checksums_enabled:
+        logging.warning("Checksum verification is disabled for %s", package_name)
+        return None
+
+    checksums_filename = checksums_url.format(
+        package_name=package_name, version=version
+    )
+    url = (
+        BASE_URL.format(editor=info["editor"], name=package_name, version=version)
+        + checksums_filename
+    )
+    logging.info("Downloading checksums from %s", url)
+
+    try:
+        response = requests.get(url, timeout=10)
+        response.raise_for_status()
+    except requests.exceptions.RequestException as e:
+        logging.warning("Error downloading checksums: %s", str(e))
+        logging.warning("Continuing without checksum verification")
+        return None
+
+    for line in response.text.splitlines():
+        if artifact_file in line:
+            return line.split()[0]
+
+    logging.warning("Could not find checksum for %s in checksums file", artifact_file)
+    logging.warning("Continuing without checksum verification")
+    return None
 
 
 def check_permissions():
     """
     ## This function checks the permissions of the user.
     ### Returns:
-        - `bool`: True if the user has root permissions, False otherwise
+        bool: True if the user has root permissions, False otherwise
     """
     return os.geteuid() == 0
 
@@ -76,10 +130,10 @@ def check_package_version(package_name, version):
     """
     ## This function checks if the package and version are already installed.
     ### Args:
-        - `package_name (string)`: Name of the package
-        - `version (string)`: Version of the package
+        package_name (str): Name of the package
+        version (str): Version of the package
     ### Returns:
-        - `bool`: True if the package is installed, False otherwise
+        bool: True if the package is installed, False otherwise
     """
     logging.info(
         "Checking if %s version %s is already installed...", package_name, version
@@ -94,47 +148,6 @@ def check_package_version(package_name, version):
 
     logging.info("Installing %s version %s", package_name, version)
     return False
-
-
-def get_checksum(checksums_url, package_name, version, artifact_file):
-    """
-    ## Get the expected checksum for a package from the checksums file.
-    ### Args:
-        checksums_url (str): URL to the checksums file
-        package_name (str): Name of the package
-        version (str): Version of the package
-        artifact_file (str): Name of the artifact file
-    ### Returns:
-        str: The SHA256 checksum for the package
-    """
-    editor = find_editor(package_name)
-    # Use the correct format string pattern for checksums
-    checksums_filename = checksums_url.format(
-        package_name=package_name, version=version
-    )
-    url = (
-        BASE_URL.format(editor=editor, name=package_name, version=version)
-        + checksums_filename
-    )
-    logging.info("Downloading checksums from %s", url)
-
-    try:
-        response = requests.get(url, timeout=10)
-        response.raise_for_status()  # Raise an exception for HTTP errors
-    except requests.exceptions.RequestException as e:
-        logging.warning("Error downloading checksums: %s", str(e))
-        logging.warning("Continuing without checksum verification")
-        return None
-
-    # Parse the checksums file to find the correct checksum
-    for line in response.text.splitlines():
-        if artifact_file in line:
-            # Format: <sha256sum>  <filename>
-            return line.split()[0]
-
-    logging.warning("Could not find checksum for %s in checksums file", artifact_file)
-    logging.warning("Continuing without checksum verification")
-    return None
 
 
 def verify_checksum(file_path, expected_checksum):
@@ -171,7 +184,7 @@ def verify_checksum(file_path, expected_checksum):
     return True
 
 
-def download_file(url, output_path, package_name=None, version=None, verify=True):
+def download_file(url, output_path, package_name=None, version=None):
     """
     ## Download a file from a URL with progress reporting and optional checksum verification.
     ### Args:
@@ -179,7 +192,6 @@ def download_file(url, output_path, package_name=None, version=None, verify=True
         output_path (str): Path to save the file
         package_name (str, optional): Name of the package (for checksum verification)
         version (str, optional): Version of the package (for checksum verification)
-        verify (bool): Whether to verify checksum (default: True)
     ### Returns:
         str: Path to the downloaded file
     """
@@ -218,10 +230,17 @@ def download_file(url, output_path, package_name=None, version=None, verify=True
     logging.info("Downloaded complete: %s", output_path)
 
     # Verify checksum if requested and package info provided
-    if verify and package_name and version:
-        artifact_file = ARTIFACTS[package_name].format(
-            package_name=package_name, version=version
-        )
+    verify_enabled = PACKAGES.get(package_name, {}).get("checksums", False)
+
+    if verify_enabled and package_name and version:
+        artifact_pattern = PACKAGES.get(package_name)["artifact"]
+        if "{" in artifact_pattern:
+            artifact_file = artifact_pattern.format(
+                package_name=package_name, version=version
+            )
+        else:
+            artifact_file = artifact_pattern
+
         expected_checksum = get_checksum(
             CHECKSUMS, package_name, version, artifact_file
         )
@@ -237,11 +256,11 @@ def install_package(package_name, version):
         package_name (str): Name of the package to install
         version (str): Version of the package to install
     """
-    editor = find_editor(package_name)
-    artifact_name = ARTIFACTS[package_name].format(
+    editor = PACKAGES[package_name]["editor"]
+    artifact_name = PACKAGES[package_name]["artifact"].format(
         package_name=package_name, version=version
     )
-    # Build the download URL dynamically here instead of at module level
+
     download_url = (
         BASE_URL.format(editor=editor, name=package_name, version=version)
         + artifact_name
@@ -249,34 +268,33 @@ def install_package(package_name, version):
 
     # Create a temporary directory that will be automatically cleaned up
     with tempfile.TemporaryDirectory(prefix=f"{package_name}_") as temp_dir:
-        # Full path for the downloaded file
         download_path = os.path.join(temp_dir, artifact_name)
 
         # Download with progress reporting and checksum verification
         download_file(download_url, download_path, package_name, version)
 
-        # Extract the archive
-        logging.info("Extracting %s...", artifact_name)
-        try:
-            Archive(download_path).extractall(temp_dir)
-        except ValueError as error:
-            logging.error("Error extracting archive %s: %s", artifact_name, str(error))
-            # Try to diagnose the issue
-            subprocess.run(["which", "patool"], check=False)
-            raise
+        # Extract the archive if it's a compressed file
+        if artifact_name.endswith(".tar.gz"):
+            logging.info("Extracting %s...", artifact_name)
+            try:
+                Archive(download_path).extractall(temp_dir)
+            except ValueError as error:
+                logging.error(
+                    "Error extracting archive %s: %s", artifact_name, str(error)
+                )
 
-        # Find the binary (usually has the same name as the package)
-        binary_path = os.path.join(temp_dir, package_name)
+        binary_name = PACKAGES[package_name]["binary"]
+        binary_path = os.path.join(temp_dir, binary_name)
         if not os.path.exists(binary_path):
             # Try to find the binary if it's not directly in the temp directory
             for root, _, files in os.walk(temp_dir):
-                if package_name in files:
-                    binary_path = os.path.join(root, package_name)
+                if binary_name in files:
+                    binary_path = os.path.join(root, binary_name)
                     break
 
             if not os.path.exists(binary_path):
                 raise FileNotFoundError(
-                    f"Could not find {package_name} binary in extracted files"
+                    f"Could not find {binary_name} binary in extracted files"
                 )
 
         # Make the binary executable
@@ -296,13 +314,13 @@ def install_package(package_name, version):
         logging.info("%s version %s installed successfully.", package_name, version)
 
 
-def install_scanners(scanner_versions):
+def install_tool(tool_versions):
     """
     ## This function installs the base packages.
     ### Args:
-        - `scanner_versions (dict)`: Dictionary of scanner versions
+        tool_versions (dict): Dictionary of tool versions
     """
-    for package_name in SCANNERS_VERSION:
-        version = set_versions(scanner_versions, package_name)
+    for package_name in PACKAGES:
+        version = set_versions(tool_versions, package_name)
         if not check_package_version(package_name, version):
             install_package(package_name, version)

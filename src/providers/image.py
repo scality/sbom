@@ -43,7 +43,7 @@ class ImageProvider(BaseProvider):
         ### Args:
             inputs: Optional dictionary of input parameters
         ### Returns:
-            Dictionary with scan results
+            Dictionary or string depending on the scan result (single image or directory)
         """
         inputs = inputs or self.inputs
         target = inputs.get("target", self.target)
@@ -103,7 +103,7 @@ class ImageProvider(BaseProvider):
         ### Args:
             target: Path to the image
         ### Returns:
-            Dictionary with scan results
+            str: Path to the generated SBOM file
         """
         # Extract image name and version for naming
         image_name = ""

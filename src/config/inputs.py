@@ -29,7 +29,14 @@ def get_inputs():
         "distro": os.environ.get("INPUT_DISTRO"),
         "name": os.environ.get("INPUT_NAME", None),
         "version": os.environ.get("INPUT_VERSION", None),
+        "merge": os.environ.get("INPUT_MERGE", "false").lower() == "true",
+        "merge_hierarchical": os.environ.get(
+            "INPUT_MERGE_HIERARCHICAL", "false"
+        ).lower()
+        == "true",
         "vuln": os.environ.get("INPUT_VULN", "false").lower() == "true",
-        "vuln_output_format": os.environ.get("INPUT_VULN_OUTPUT_FORMAT", "json"),
+        "vuln_output_format": os.environ.get(
+            "INPUT_VULN_OUTPUT_FORMAT", "cyclonedx-json"
+        ),
         "vuln_output_file": os.environ.get("INPUT_VULN_OUTPUT_FILE"),
     }

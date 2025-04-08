@@ -71,7 +71,7 @@ class FileProvider(BaseProvider):
         ### Args:
             inputs (Dict[str, Any]): Inputs from the provider
         ### Returns:
-            Dictionary with scan result
+            str: Path to the generated SBOM file
         """
         # Prepare args for the scanner with just metadata
         scanner_args = {
