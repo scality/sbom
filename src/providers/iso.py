@@ -39,7 +39,7 @@ class IsoProvider(BaseProvider):
         ### Args:
             inputs (Dict[str, Any]): Inputs from the provider
         ### Returns:
-            Dictionary with scan result
+            dict: Dictionary with SBOM scan result
         """
 
         inputs = inputs or self.inputs
