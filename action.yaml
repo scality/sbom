@@ -118,6 +118,8 @@ runs:
         INPUT_DISTRO: ${{ inputs.distro }}
         INPUT_NAME: ${{ inputs.name }}
         INPUT_VERSION: ${{ inputs.version }}
+        INPUT_MERGE: ${{ inputs.merge }}
+        INPUT_MERGE_HIERARCHICAL: ${{ inputs.merge_hierarchical }}
         INPUT_VULN: ${{ inputs.vuln }}
         INPUT_VULN_OUTPUT_FORMAT: ${{ inputs.vuln_output_format }}
         INPUT_VULN_OUTPUT_FILE: ${{ inputs.vuln_output_file }}
