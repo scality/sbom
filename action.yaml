@@ -21,19 +21,10 @@ inputs:
   target_type:
     description: "The type of target to scan"
     required: false
-    options:
-      - file
-      - image
-      - iso
 
   output_format:
     description: "The SBOM format to export"
     required: false
-    options:
-      - cyclonedx-json
-      - cyclonedx-xml
-      - spdx-json
-      - spdx
 
   output_file:
     description: "A file location to store the SBOM"
@@ -48,7 +39,7 @@ inputs:
     required: false
 
   distro:
-    description: "The Linux distribution of the target, if not detected"
+    description: "The Linux distribution of the target, on the format 'distro:version', if not detected"
     required: false
 
   name:
@@ -59,22 +50,21 @@ inputs:
     description: "The version of the target, if not detected"
     required: false
 
+  merge:
+    description: "Merge generated SBOMs into a single file, only for CycloneDX"
+    required: false
+
+  merge_hierarchical:
+    description: "Merge generated SBOMs into a single file, only for CycloneDX"
+    required: false
+
   vuln:
     description: "Check for vulnerabilities"
     required: false
-    type: boolean
 
   vuln_output_format:
     description: "Vulnerability output format"
     required: false
-    options:
-      - json
-      - table
-      - sarif
-      - cyclonedx-json
-      - cyclonedx
-      - html
-      - junit
 
   vuln_output_file:
     description: "A file location to store the vulnerability report"
@@ -128,6 +118,8 @@ runs:
         INPUT_DISTRO: ${{ inputs.distro }}
         INPUT_NAME: ${{ inputs.name }}
         INPUT_VERSION: ${{ inputs.version }}
+        INPUT_MERGE: ${{ inputs.merge }}
+        INPUT_MERGE_HIERARCHICAL: ${{ inputs.merge_hierarchical }}
         INPUT_VULN: ${{ inputs.vuln }}
         INPUT_VULN_OUTPUT_FORMAT: ${{ inputs.vuln_output_format }}
         INPUT_VULN_OUTPUT_FILE: ${{ inputs.vuln_output_file }}

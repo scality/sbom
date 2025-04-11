@@ -1,0 +1,19 @@
+packages:
+  syft:
+    default_version: 1.22.0
+    editor: anchore
+    artifact: '{package_name}_{version}_linux_amd64.tar.gz'
+    binary: syft
+    checksums: true
+  grype:
+    default_version: 0.91.0
+    editor: anchore
+    artifact: '{package_name}_{version}_linux_amd64.tar.gz'
+    binary: grype
+    checksums: true
+  cyclonedx-cli:
+    default_version: 0.27.2
+    editor: CycloneDX
+    artifact: cyclonedx-linux-x64
+    binary: cyclonedx-linux-x64
+    checksums: false

@@ -9,7 +9,7 @@ using [Syft](https://github.com/anchore/syft), with optional vulnerability scann
 ## Basic Usage
 
 ```yaml
-- uses: scality/sbom@v2.0.0
+- uses: scality/sbom@v2
   with:
     target: /usr/local/bin
 ```
@@ -26,17 +26,19 @@ The main [SBOM action](action.yaml) is responsible for generating SBOMs.
 | -------------------- | ------------------------------------------------------------------------------------------- | ------------ |
 | `grype-version`      | Grype version to use                                                                        | `0.91.0`     |
 | `syft-version`       | Syft version to use                                                                         | `1.22.0`     |
-| `target`             | The target to scan (file, directory, image, ISO, or repo)                                   | `./`         |
-| `target-type`        | Type of target to scan (file, directory, image, iso, repo)                                  | `file`       |
-| `output-format`      | Format of the generated SBOM                                                              | `cyclonedx-json` |
+| `target`             | The target to scan (path or image)                                   | `./`         |
+| `target-type`        | Type of target to scan (file, directory, image, iso)                                  | `file`       |
+| `output-format`      | Format of the generated SBOM (cyclonedx-json cyclonedx-xml github-json spdx-json spdx-tag-value syft-json syft-table syft-text template)                                                              | `cyclonedx-json` |
 | `output-file`        | A specific file location to store the SBOM                                                  |              |
 | `output-dir`         | Directory to store generated SBOM files                                                     | `/tmp/sbom`  |
 | `exclude-mediatypes` | Media types to exclude for images (comma-separated)                                         |              |
 | `distro`             | Linux distribution of the target (if not auto-detected)                                     |              |
 | `name`               | Override the detected name of the target                                                    |              |
 | `version`            | Override the detected version of the target                                                 |              |
+| `merge`              | Merge multiple SBOMs into a single file                                                     | `false`      |
+| `merge_hierarchical` | Merge multiple SBOMs into a single hierarchical file                                        | `false`      |
 | `vuln`               | Enable vulnerability scanning                                                               | `false`      |
-| `vuln-output-format` | Format for the vulnerability report (HTML or JSON) when `vuln` is enabled                     | `json`       |
+| `vuln-output-format` | Format for the vulnerability report when `vuln` is enabled (supports `json`, `html`, `csv`, `table`, or comma-separated values like `html,json`) | `cyclonedx-json`       |
 | `vuln-output-file`   | A specific file location to store the vulnerability report                                  |              |
 
 ## Example Usage
@@ -46,18 +48,32 @@ The main [SBOM action](action.yaml) is responsible for generating SBOMs.
 Use the `output-format` and `vuln-output-format` parameters to choose the SBOM and vulnerability report formats:
 
 ```yaml
-- uses: scality/sbom@v2.0.0
+- uses: scality/sbom@v2
   with:
     target: ./artifacts
     output-format: cyclonedx-json  # SBOM format
-    vuln: true                    # Enable vulnerability scanning
-    vuln-output-format: html      # Vulnerability report format
+    vuln: true                     # Enable vulnerability scanning
+    vuln-output-format: html       # Generate HTML vulnerability report
+```
+
+The HTML format provides an interactive report with a dynamic table for better visualization of vulnerabilities, allowing for easier filtering and sorting.
+
+### Multiple vulnerability report formats
+
+You can generate multiple formats simultaneously by using comma-separated values:
+
+```yaml
+- uses: scality/sbom@v2
+  with:
+    target: ./artifacts
+    vuln: true
+    vuln-output-format: html,json  # Generate both HTML and JSON reports
 ```
 
 ### Specify target type explicitly
 
 ```yaml
-- uses: scality/sbom@v2.0.0
+- uses: scality/sbom@v2
   with:
     target: myimage.tar
     target-type: image
@@ -68,7 +84,7 @@ Use the `output-format` and `vuln-output-format` parameters to choose the SBOM a
 For images (like those built using Oras) that use custom mediatypes not supported by Skopeo:
 
 ```yaml
-- uses: scality/sbom@v2.0.0
+- uses: scality/sbom@v2
   with:
     target: ./images
     target-type: image
@@ -78,7 +94,7 @@ For images (like those built using Oras) that use custom mediatypes not supporte
 ### Enable vulnerability scanning
 
 ```yaml
-- uses: scality/sbom@v2.0.0
+- uses: scality/sbom@v2
   with:
     target: ./
     vuln: true
@@ -113,7 +129,7 @@ jobs:
           path: ${{ env.BASE_PATH }}/repo/myrepo
           
       - name: Generate SBOM for repository
-        uses: scality/sbom@v2.0.0
+        uses: scality/sbom@v2
         with:
           target: ${{ env.BASE_PATH }}/repo/myrepo
           target-type: file
@@ -130,13 +146,16 @@ jobs:
           curl -sSfL -o ${{ env.BASE_PATH }}/iso/my.iso -u $ARTIFACTS_USER:$ARTIFACTS_PASSWORD $ARTIFACTS_URL/my.iso
           
       - name: Generate SBOM for ISO
-        uses: scality/sbom@v2.0.0
+        uses: scality/sbom@v2
         with:
           target: ${{ env.BASE_PATH }}/iso/my.iso
           target-type: iso
           version: "1.0.0"
           output-dir: ${{ env.SBOM_PATH }}
           vuln: true
+          vuln-output-format: html
+          merge: true
+          merge_hierarchical: true
           
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
@@ -210,10 +229,6 @@ In the generated SBOM files, you will find CycloneDX metadata. Examples include:
     }
 }
 ```
-
-## References
-
-HTML template for **Grype** vulnerability reports was modified from [Grype Contrib](https://github.com/opt-nc/grype-contribs).
 
 ## Core Workflow
 
@@ -343,3 +358,77 @@ flowchart TD
 
 1. If `vuln` is enabled, the provider’s `vuln()` method uses Grype to scan the SBOM.
 2. Grype generates a vulnerability report saved as: `{target_type}_{name}_{version}_vuln.json`.
+
+## Merge Explanation
+
+The merge is per default not hierarchical for the `components` field of a `component`. This means that components that were contained in the `components` of an already present component will just be added as new components under the SBOMs’ `components` sections. The `--hierarchical` flag allows for hierarchical merges. This affects only the top level components of the merged SBOM. The structured of nested components is preserved in both cases (except the removal of already present components), as shown for *component 4* in the image below.
+
+```mermaid
+flowchart TD
+    subgraph "SBOM 1"
+        0["Component 0 <br> metadata component"]
+        01["Component 1"]
+        02["Component 2"]
+        
+        0 -->|contains| 01
+        0 -->|contains| 02
+    end
+```
+
+```mermaid
+flowchart TD
+    subgraph "SBOM 2"
+        1["Component 1 <br> metadata component"]
+        13["Component 3"]
+        14["Component 4"]
+        15["Component 5"]
+        
+        1 -->|contains| 13
+        1 -->|contains| 14
+        14 -->|contains| 15
+    end
+```
+
+### Default merge:
+
+```mermaid
+flowchart TD
+    subgraph "Merged SBOM"
+        0["Component 0 <br> metadata component"]
+        1["Component 1"]
+        2["Component 2"]
+        3["Component 3"]
+        4["Component 4"]
+        5["Component 5"]
+        
+        0 -->|contains| 1
+        0 -->|contains| 2
+        0 -->|contains| 3
+        0 -->|contains| 4
+        4 -->|contains| 5
+    end
+```
+
+### Hierarchical merge:
+
+```mermaid
+flowchart TD
+    subgraph "Merged SBOM"
+        0["Component 0 <br> metadata component"]
+        1["Component 1"]
+        2["Component 2"]
+        3["Component 3"]
+        4["Component 4"]
+        5["Component 5"]
+        
+        0 -->|contains| 1
+        0 -->|contains| 2
+        1 -->|contains| 3
+        1 -->|contains| 4
+        4 -->|contains| 5
+    end
+```
+
+### References
+- [CycloneDX Specification](https://cyclonedx.org/docs/1.6/json/)
+- [CycloneDX Merge](https://festo-se.github.io/cyclonedx-editor-validator/usage/merge.html)
