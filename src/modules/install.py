@@ -1,5 +1,6 @@
 """Module providing installation of required tools for the project."""
 
+from pathlib import Path
 import logging
 import os
 import hashlib
@@ -14,17 +15,13 @@ from pyunpack import Archive
 # Load package information from versions.yaml
 def load_packages():
     """Load package configurations from versions.yaml file."""
-    yaml_path = os.path.join(
-        os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "versions.yaml"
-    )
+    yaml_path = Path(__file__).resolve().parents[2] / "versions.yaml"
     try:
-        with open(yaml_path, "r", encoding="utf-8") as file:
-            data = yaml.safe_load(file)
-
+        data = yaml.safe_load(Path(yaml_path).read_text(encoding="utf-8"))
         packages = data.get("packages", {})
         return packages
-    except Exception as e:
-        logging.error("Failed to load versions.yaml: %s", str(e))
+    except (yaml.YAMLError, FileNotFoundError) as error:
+        logging.error("Failed to load versions.yaml: %s", str(error))
         raise
 
 

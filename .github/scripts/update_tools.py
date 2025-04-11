@@ -7,25 +7,20 @@ versions.yaml file while preserving the original file format.
 """
 
 from pathlib import Path
-import os
-import sys
 import yaml
 import requests
 
 # Add the root directory to the Python path
-root_dir = Path(__file__).resolve().parents[2]
+ROOT_DIR = Path(__file__).resolve().parents[2]
+YAML_PATH = ROOT_DIR / "versions.yaml"
 
 def load_packages():
     """Load package configurations from versions.yaml file."""
-    yaml_path = os.path.join(root_dir, "versions.yaml")
     try:
-        with open(yaml_path, 'r', encoding='utf-8') as file:
-            data = yaml.safe_load(file)
-        # Expect data["packages"] to be a dict
+        data = yaml.safe_load(Path(YAML_PATH).read_text(encoding="utf-8"))
         packages = data.get("packages", {})
-        data["packages"] = packages
-        return data
-    except yaml.YAMLError as error:
+        return data, packages
+    except (yaml.YAMLError, FileNotFoundError) as error:
         print(f"⚠ Error loading versions.yaml: {str(error)}")
         raise
 
@@ -43,9 +38,8 @@ def get_latest_release(package_name, package_info):
 
 def update_versions(file_path):
     """Update the tools versions in the specified file while preserving format."""
-    data = load_packages()
     updates_made = False
-    packages = data.get("packages", {})
+    data,packages = load_packages()
 
     # Iterate over package dictionary
     for package_name, package in packages.items():
@@ -65,9 +59,11 @@ def update_versions(file_path):
         return
 
     # Write the updated data back to the file
-    with open(file_path, "w", encoding="utf8") as file:
-        yaml.dump(data, file, default_flow_style=False, sort_keys=False)
+    Path(file_path).write_text(
+        yaml.dump(data, default_flow_style=False, sort_keys=False),
+        encoding="utf8"
+    )
     print("✓ Updates applied to", file_path)
 
 if __name__ == "__main__":
-    update_versions(os.path.join(root_dir, "versions.yaml"))
+    update_versions(YAML_PATH)
