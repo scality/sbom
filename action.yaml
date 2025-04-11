@@ -39,7 +39,7 @@ inputs:
     required: false
 
   distro:
-    description: "The Linux distribution of the target, if not detected"
+    description: "The Linux distribution of the target, on the format 'distro:version', if not detected"
     required: false
 
   name:

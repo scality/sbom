@@ -89,7 +89,9 @@ class GrypeScanner:
         target_name = os.path.splitext(target_basename)[0]
         return f"{output_dir}/{target_name}_vuln.{file_extension}"
 
-    def scan(self, target, scanner_args):
+    def scan(
+        self, target, scanner_args
+    ):  # pylint: disable=too-many-locals, too-many-branches
         """
         ## Run Grype scan on the target.
         ### Args:
@@ -103,6 +105,44 @@ class GrypeScanner:
 
         # Get the inputs from the Github action
         inputs = get_inputs()
+
+        # Initialize distro variables
+        distro = None
+        distro_version = None
+
+        # 1: Get distro info if available in inputs
+        if inputs.get("distro"):
+            # Check if distro is a valid format
+            if ":" in inputs["distro"]:
+                distro = inputs["distro"].split(":")[0]
+                distro_version = inputs["distro"].split(":")[1]
+                logging.info("Using distro from inputs: %s:%s", distro, distro_version)
+            else:
+                logging.warning(
+                    "Invalid distro format in inputs. Expected 'distro:version'"
+                )
+                distro = inputs["distro"]
+                distro_version = None
+                logging.info("Using distro from inputs (without version): %s", distro)
+
+        # 2: Get distro info from scanner_args (only if not already set from inputs)
+        if not distro or not distro_version:
+            scanner_distro = scanner_args.get("distro")
+            scanner_distro_version = scanner_args.get("distro_version")
+
+            if scanner_distro and scanner_distro_version:
+                distro = scanner_distro
+                distro_version = scanner_distro_version
+                logging.info(
+                    "Using distro from scanner_args: %s:%s", distro, distro_version
+                )
+            elif not distro:  # Only log warning if we didn't get any distro info
+                logging.warning("Distro info not available in inputs or scanner_args.")
+
+        # 3: Update scanner_args with the final distro info to be used by _run_scan
+        if distro and distro_version:
+            scanner_args["distro"] = distro
+            scanner_args["distro_version"] = distro_version
 
         # Get output directory
         output_dir = inputs.get("output_dir") or "/tmp/sbom"
