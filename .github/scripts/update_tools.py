@@ -9,6 +9,7 @@ versions.yaml file while preserving the original file format.
 from pathlib import Path
 import yaml
 import requests
+import re
 
 # Add the root directory to the Python path
 ROOT_DIR = Path(__file__).resolve().parents[2]
@@ -35,6 +36,54 @@ def get_latest_release(package_name, package_info):
         print(f"⚠ Error fetching latest version for {package_name}: {str(error)}")
         return None
 
+def update_readme(packages):
+    """Update version references in README.md file."""
+    readme_file = ROOT_DIR / "README.md"
+    if not readme_file.exists():
+        print("⚠ README.md not found, skipping README updates")
+        return False
+    
+    readme_content = readme_file.read_text(encoding="utf-8")
+    updated_content = readme_content
+    readme_updates_made = False
+    
+    # Update version references in the README
+    version_mappings = {
+        "grype": packages.get("grype", {}).get("default_version", ""),
+        "syft": packages.get("syft", {}).get("default_version", "")
+    }
+    
+    for tool, version in version_mappings.items():
+        if not version:
+            continue
+            
+        # Update default version in parameter table
+        old_pattern = f"| `{tool}-version`      | {tool.title()} version to use                                                                        | `"
+        if old_pattern in updated_content:
+            # Find the current version in the table
+            import re
+            pattern = rf"(\| `{tool}-version`\s+\| {tool.title()} version to use\s+\| `)([^`]+)(`\s+\|)"
+            match = re.search(pattern, updated_content)
+            if match and match.group(2) != version:
+                updated_content = re.sub(pattern, rf"\g<1>{version}\g<3>", updated_content)
+                print(f"⬆ Updated {tool}-version in README table from {match.group(2)} to {version}")
+                readme_updates_made = True
+        
+        # Update version in CycloneDX metadata example (specifically for syft)
+        if tool == "syft":
+            syft_version_pattern = r'("name": "syft",\s+"version": ")([^"]+)(")'
+            match = re.search(syft_version_pattern, updated_content)
+            if match and match.group(2) != version:
+                updated_content = re.sub(syft_version_pattern, rf"\g<1>{version}\g<3>", updated_content)
+                print(f"⬆ Updated syft version in README example from {match.group(2)} to {version}")
+                readme_updates_made = True
+    
+    if readme_updates_made:
+        readme_file.write_text(updated_content, encoding="utf-8")
+        print("✓ README.md updates applied")
+    
+    return readme_updates_made
+
 def update_versions():
     """Update the tools versions in the versions file while preserving format."""
     updates_made = False
@@ -54,16 +103,20 @@ def update_versions():
         else:
             print(f"✓ {package_name} is already at latest version {latest_version}")
 
-    if not updates_made:
+    # Update README regardless of whether versions.yaml was updated
+    readme_updated = update_readme(packages)
+    
+    if not updates_made and not readme_updated:
         print("✓ All tools are already at their latest versions. No updates needed.")
         return
 
-    # Write the updated data back to the file using the constant VERSION_FILE
-    VERSION_FILE.write_text(
-        yaml.dump(data, default_flow_style=False, sort_keys=False),
-        encoding="utf8"
-    )
-    print("✓ Updates applied to", VERSION_FILE)
+    if updates_made:
+        # Write the updated data back to the file using the constant VERSION_FILE
+        VERSION_FILE.write_text(
+            yaml.dump(data, default_flow_style=False, sort_keys=False),
+            encoding="utf8"
+        )
+        print("✓ Updates applied to", VERSION_FILE)
 
 if __name__ == "__main__":
     update_versions()
