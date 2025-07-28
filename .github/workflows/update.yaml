@@ -1,0 +1,48 @@
+name: Update Tool Versions
+on:
+  schedule:
+    - cron: "23 0 * * *"  # Runs daily at 23:00 UTC
+  workflow_dispatch:
+
+jobs:
+  update-versions:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Configure Git
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Update tool versions
+        run: python .github/scripts/update_tools.py
+
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@v7
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: ':arrow_up: update tool versions'
+          title: 'Update scanner tool versions'
+          body: |
+            Automated version bump of scanner versions.
+
+            **Changes:**
+            - Update version in README.md
+            - Update version in versions.yaml
+
+            **Next steps:**
+            1. Review and merge this PR
+            2. Create a release tag: `v${{ github.event.inputs.version }}-${{ github.event.inputs.collection }}`
+          branch: update-tool-versions

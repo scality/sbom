@@ -24,11 +24,11 @@ The main [SBOM action](action.yaml) is responsible for generating SBOMs.
 
 | Parameter            | Description                                                                                 | Default      |
 | -------------------- | ------------------------------------------------------------------------------------------- | ------------ |
-| `grype-version`      | Grype version to use                                                                        | `0.91.0`     |
-| `syft-version`       | Syft version to use                                                                         | `1.22.0`     |
-| `target`             | The target to scan (path or image)                                   | `./`         |
-| `target-type`        | Type of target to scan (file, directory, image, iso)                                  | `file`       |
-| `output-format`      | Format of the generated SBOM (cyclonedx-json cyclonedx-xml github-json spdx-json spdx-tag-value syft-json syft-table syft-text template)                                                              | `cyclonedx-json` |
+| `grype-version`      | Grype version to use                                                                        | `0.96.1`     |
+| `syft-version`       | Syft version to use                                                                         | `1.29.0`     |
+| `target`             | The target to scan (path or image)                                                          | `./`         |
+| `target-type`        | Type of target to scan (file, directory, image, iso)                                        | `file`       |
+| `output-format`      | Format of the generated SBOM <br> (cyclonedx-json cyclonedx-xml github-json spdx-json spdx-tag-value syft-json syft-table syft-text template) | `cyclonedx-json` |
 | `output-file`        | A specific file location to store the SBOM                                                  |              |
 | `output-dir`         | Directory to store generated SBOM files                                                     | `/tmp/sbom`  |
 | `exclude-mediatypes` | Media types to exclude for images (comma-separated)                                         |              |
@@ -38,7 +38,7 @@ The main [SBOM action](action.yaml) is responsible for generating SBOMs.
 | `merge`              | Merge multiple SBOMs into a single file                                                     | `false`      |
 | `merge_hierarchical` | Merge multiple SBOMs into a single hierarchical file                                        | `false`      |
 | `vuln`               | Enable vulnerability scanning                                                               | `false`      |
-| `vuln-output-format` | Format for the vulnerability report when `vuln` is enabled (supports `json`, `html`, `csv`, `table`, or comma-separated values like `html,json`) | `cyclonedx-json`       |
+| `vuln-output-format` | Format for the vulnerability report when `vuln` is enabled<br>(supports `json`, `html`, `csv`, `table`, or comma-separated values like `html,json`) | `cyclonedx-json`|
 | `vuln-output-file`   | A specific file location to store the vulnerability report                                  |              |
 
 ## Example Usage
@@ -185,7 +185,7 @@ In the generated SBOM files, you will find CycloneDX metadata. Examples include:
                     "type": "application",
                     "author": "anchore",
                     "name": "syft",
-                    "version": "1.21.0"
+                    "version": "1.29.0"
                 }
             ]
         },
@@ -216,7 +216,7 @@ In the generated SBOM files, you will find CycloneDX metadata. Examples include:
                     "type": "application",
                     "author": "anchore",
                     "name": "syft",
-                    "version": "1.21.0"
+                    "version": "1.29.0"
                 }
             ]
         },
