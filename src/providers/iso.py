@@ -181,10 +181,10 @@ class IsoProvider(BaseProvider):
                     # Extract just the name part
                     name_part = volume_name[: match.start()].strip()
                     if name_part:  # Make sure we have something before the version
-                        return name_part.lower().replace(" ", "_")
+                        return name_part.lower().replace(" ", "-")
 
             # If no version pattern found, use the whole name
-            return volume_name.lower().replace(" ", "_")
+            return volume_name.lower().replace(" ", "-")
 
         # Fall back to file basename
         return pathlib.Path(self.iso_path).stem
