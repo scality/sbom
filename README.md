@@ -24,7 +24,7 @@ The main [SBOM action](action.yaml) is responsible for generating SBOMs.
 
 | Parameter            | Description                                                                                 | Default      |
 | -------------------- | ------------------------------------------------------------------------------------------- | ------------ |
-| `grype-version`      | Grype version to use                                                                        | `0.99.1`     |
+| `grype-version`      | Grype version to use                                                                        | `0.100.0`     |
 | `syft-version`       | Syft version to use                                                                         | `1.29.0`     |
 | `target`             | The target to scan (path or image)                                                          | `./`         |
 | `target-type`        | Type of target to scan (file, directory, image, iso)                                        | `file`       |
@@ -185,7 +185,7 @@ In the generated SBOM files, you will find CycloneDX metadata. Examples include:
                     "type": "application",
                     "author": "anchore",
                     "name": "syft",
-                    "version": "1.32.0"
+                    "version": "1.33.0"
                 }
             ]
         },
@@ -216,7 +216,7 @@ In the generated SBOM files, you will find CycloneDX metadata. Examples include:
                     "type": "application",
                     "author": "anchore",
                     "name": "syft",
-                    "version": "1.32.0"
+                    "version": "1.33.0"
                 }
             ]
         },
