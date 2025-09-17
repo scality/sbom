@@ -5,16 +5,12 @@ updates:
     directory: "/.github/workflows"
     schedule:
       interval: "daily"
-    reviewers:
-      - "scality/metalk8s"
 
   - package-ecosystem: "pip"
     directory: "./requirements.txt"
     schedule:
       interval: "daily"
     rebase-strategy: "auto"
-    reviewers:
-      - "scality/metalk8s"
 
   - package-ecosystem: "npm"
     directory: "/tests"
