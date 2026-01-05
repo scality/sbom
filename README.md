@@ -24,36 +24,36 @@ The main [SBOM action](action.yaml) is responsible for generating SBOMs.
 
 | Parameter            | Description                                                                                 | Default      |
 | -------------------- | ------------------------------------------------------------------------------------------- | ------------ |
-| `grype-version`      | Grype version to use                                                                        | `0.104.0`     |
-| `syft-version`       | Syft version to use                                                                         | `1.38.0`     |
+| `grype_version`      | Grype version to use                                                                        | `0.104.0`     |
+| `syft_version`       | Syft version to use                                                                         | `1.38.0`     |
 | `target`             | The target to scan (path or image)                                                          | `./`         |
-| `target-type`        | Type of target to scan (file, directory, image, iso)                                        | `file`       |
-| `output-format`      | Format of the generated SBOM <br> (cyclonedx-json cyclonedx-xml github-json spdx-json spdx-tag-value syft-json syft-table syft-text template) | `cyclonedx-json` |
-| `output-file`        | A specific file location to store the SBOM                                                  |              |
-| `output-dir`         | Directory to store generated SBOM files                                                     | `/tmp/sbom`  |
-| `exclude-mediatypes` | Media types to exclude for images (comma-separated)                                         |              |
+| `target_type`        | Type of target to scan (file, directory, image, iso)                                        | `file`       |
+| `output_format`      | Format of the generated SBOM <br> (cyclonedx-json cyclonedx-xml github-json spdx-json spdx-tag-value syft-json syft-table syft-text template) | `cyclonedx-json` |
+| `output_file`        | A specific file location to store the SBOM                                                  |              |
+| `output_dir`         | Directory to store generated SBOM files                                                     | `/tmp/sbom`  |
+| `exclude_mediatypes` | Media types to exclude for images (comma-separated)                                         |              |
 | `distro`             | Linux distribution of the target (if not auto-detected)                                     |              |
 | `name`               | Override the detected name of the target                                                    |              |
 | `version`            | Override the detected version of the target                                                 |              |
 | `merge`              | Merge multiple SBOMs into a single file                                                     | `false`      |
 | `merge_hierarchical` | Merge multiple SBOMs into a single hierarchical file                                        | `false`      |
 | `vuln`               | Enable vulnerability scanning                                                               | `false`      |
-| `vuln-output-format` | Format for the vulnerability report when `vuln` is enabled<br>(supports `json`, `html`, `csv`, `table`, or comma-separated values like `html,json`) | `cyclonedx-json`|
-| `vuln-output-file`   | A specific file location to store the vulnerability report                                  |              |
+| `vuln_output_format` | Format for the vulnerability report when `vuln` is enabled<br>(supports `json`, `html`, `csv`, `table`, or comma-separated values like `html,json`) | `cyclonedx-json`|
+| `vuln_output_file`   | A specific file location to store the vulnerability report                                  |              |
 
 ## Example Usage
 
 ### Scan with a specific format
 
-Use the `output-format` and `vuln-output-format` parameters to choose the SBOM and vulnerability report formats:
+Use the `output_format` and `vuln_output_format` parameters to choose the SBOM and vulnerability report formats:
 
 ```yaml
 - uses: scality/sbom@v2
   with:
     target: ./artifacts
-    output-format: cyclonedx-json  # SBOM format
+    output_format: cyclonedx-json  # SBOM format
     vuln: true                     # Enable vulnerability scanning
-    vuln-output-format: html       # Generate HTML vulnerability report
+    vuln_output_format: html       # Generate HTML vulnerability report
 ```
 
 The HTML format provides an interactive report with a dynamic table for better visualization of vulnerabilities, allowing for easier filtering and sorting.
@@ -67,7 +67,7 @@ You can generate multiple formats simultaneously by using comma-separated values
   with:
     target: ./artifacts
     vuln: true
-    vuln-output-format: html,json  # Generate both HTML and JSON reports
+    vuln_output_format: html,json  # Generate both HTML and JSON reports
 ```
 
 ### Specify target type explicitly
@@ -76,7 +76,7 @@ You can generate multiple formats simultaneously by using comma-separated values
 - uses: scality/sbom@v2
   with:
     target: myimage.tar
-    target-type: image
+    target_type: image
 ```
 
 ### Exclude mediatypes for container images
@@ -87,8 +87,8 @@ For images (like those built using Oras) that use custom mediatypes not supporte
 - uses: scality/sbom@v2
   with:
     target: ./images
-    target-type: image
-    exclude-mediatypes: "application/my-configuration+json,text/nginx-config"
+    target_type: image
+    exclude_mediatypes: "application/my-configuration+json,text/nginx-config"
 ```
 
 ### Enable vulnerability scanning
@@ -132,8 +132,8 @@ jobs:
         uses: scality/sbom@v2
         with:
           target: ${{ env.BASE_PATH }}/repo/myrepo
-          target-type: file
-          output-dir: ${{ env.SBOM_PATH }}
+          target_type: file
+          output_dir: ${{ env.SBOM_PATH }}
           
       - name: Download artifacts
         shell: bash
@@ -149,11 +149,11 @@ jobs:
         uses: scality/sbom@v2
         with:
           target: ${{ env.BASE_PATH }}/iso/my.iso
-          target-type: iso
+          target_type: iso
           version: "1.0.0"
-          output-dir: ${{ env.SBOM_PATH }}
+          output_dir: ${{ env.SBOM_PATH }}
           vuln: true
-          vuln-output-format: html
+          vuln_output_format: html
           merge: true
           merge_hierarchical: true
           
