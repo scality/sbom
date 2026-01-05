@@ -58,16 +58,16 @@ def update_readme(packages):
             continue
             
         # Update default version in parameter table
-        old_pattern = f"| `{tool}-version`      | {tool.title()} version to use                                                                        | `"
-        if old_pattern in updated_content:
-            # Find the current version in the table
-            import re
-            pattern = rf"(\| `{tool}-version`\s+\| {tool.title()} version to use\s+\| `)([^`]+)(`\s+\|)"
-            match = re.search(pattern, updated_content)
-            if match and match.group(2) != version:
-                updated_content = re.sub(pattern, rf"\g<1>{version}\g<3>", updated_content)
-                print(f"⬆ Updated {tool}-version in README table from {match.group(2)} to {version}")
-                readme_updates_made = True
+        pattern = rf"(\| `{tool}_version`\s+\| {tool.title()} version to use\s+\| `)([^`]+)(`\s+\|)"
+        match = re.search(pattern, updated_content)
+        if match and match.group(2) != version:
+            updated_content = re.sub(pattern, rf"\g<1>{version}\g<3>", updated_content)
+            print(f"⬆ Updated {tool}_version in README table from {match.group(2)} to {version}")
+            readme_updates_made = True
+        elif match:
+            print(f"✓ {tool}_version in README table is already at {version}")
+        else:
+            print(f"⚠ Pattern not found for {tool}_version in README table")
         
         # Update version in CycloneDX metadata example (specifically for syft)
         if tool == "syft":
@@ -77,6 +77,10 @@ def update_readme(packages):
                 updated_content = re.sub(syft_version_pattern, rf"\g<1>{version}\g<3>", updated_content)
                 print(f"⬆ Updated syft version in README example from {match.group(2)} to {version}")
                 readme_updates_made = True
+            elif match:
+                print(f"✓ syft version in README example is already at {version}")
+            else:
+                print(f"⚠ Pattern not found for syft version in README example")
     
     if readme_updates_made:
         readme_file.write_text(updated_content, encoding="utf-8")

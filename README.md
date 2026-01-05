@@ -24,36 +24,36 @@ The main [SBOM action](action.yaml) is responsible for generating SBOMs.
 
 | Parameter            | Description                                                                                 | Default      |
 | -------------------- | ------------------------------------------------------------------------------------------- | ------------ |
-| `grype-version`      | Grype version to use                                                                        | `0.104.0`     |
-| `syft-version`       | Syft version to use                                                                         | `1.38.0`     |
+| `grype_version`      | Grype version to use                                                                        | `0.104.3`     |
+| `syft_version`       | Syft version to use                                                                         | `1.39.0`     |
 | `target`             | The target to scan (path or image)                                                          | `./`         |
-| `target-type`        | Type of target to scan (file, directory, image, iso)                                        | `file`       |
-| `output-format`      | Format of the generated SBOM <br> (cyclonedx-json cyclonedx-xml github-json spdx-json spdx-tag-value syft-json syft-table syft-text template) | `cyclonedx-json` |
-| `output-file`        | A specific file location to store the SBOM                                                  |              |
-| `output-dir`         | Directory to store generated SBOM files                                                     | `/tmp/sbom`  |
-| `exclude-mediatypes` | Media types to exclude for images (comma-separated)                                         |              |
+| `target_type`        | Type of target to scan (file, directory, image, iso)                                        | `file`       |
+| `output_format`      | Format of the generated SBOM <br> (cyclonedx-json cyclonedx-xml github-json spdx-json spdx-tag-value syft-json syft-table syft-text template) | `cyclonedx-json` |
+| `output_file`        | A specific file location to store the SBOM                                                  |              |
+| `output_dir`         | Directory to store generated SBOM files                                                     | `/tmp/sbom`  |
+| `exclude_mediatypes` | Media types to exclude for images (comma-separated)                                         |              |
 | `distro`             | Linux distribution of the target (if not auto-detected)                                     |              |
 | `name`               | Override the detected name of the target                                                    |              |
 | `version`            | Override the detected version of the target                                                 |              |
 | `merge`              | Merge multiple SBOMs into a single file                                                     | `false`      |
 | `merge_hierarchical` | Merge multiple SBOMs into a single hierarchical file                                        | `false`      |
 | `vuln`               | Enable vulnerability scanning                                                               | `false`      |
-| `vuln-output-format` | Format for the vulnerability report when `vuln` is enabled<br>(supports `json`, `html`, `csv`, `table`, or comma-separated values like `html,json`) | `cyclonedx-json`|
-| `vuln-output-file`   | A specific file location to store the vulnerability report                                  |              |
+| `vuln_output_format` | Format for the vulnerability report when `vuln` is enabled<br>(supports `json`, `html`, `csv`, `table`, or comma-separated values like `html,json`) | `cyclonedx-json`|
+| `vuln_output_file`   | A specific file location to store the vulnerability report                                  |              |
 
 ## Example Usage
 
 ### Scan with a specific format
 
-Use the `output-format` and `vuln-output-format` parameters to choose the SBOM and vulnerability report formats:
+Use the `output_format` and `vuln_output_format` parameters to choose the SBOM and vulnerability report formats:
 
 ```yaml
 - uses: scality/sbom@v2
   with:
     target: ./artifacts
-    output-format: cyclonedx-json  # SBOM format
+    output_format: cyclonedx-json  # SBOM format
     vuln: true                     # Enable vulnerability scanning
-    vuln-output-format: html       # Generate HTML vulnerability report
+    vuln_output_format: html       # Generate HTML vulnerability report
 ```
 
 The HTML format provides an interactive report with a dynamic table for better visualization of vulnerabilities, allowing for easier filtering and sorting.
@@ -67,7 +67,7 @@ You can generate multiple formats simultaneously by using comma-separated values
   with:
     target: ./artifacts
     vuln: true
-    vuln-output-format: html,json  # Generate both HTML and JSON reports
+    vuln_output_format: html,json  # Generate both HTML and JSON reports
 ```
 
 ### Specify target type explicitly
@@ -76,7 +76,18 @@ You can generate multiple formats simultaneously by using comma-separated values
 - uses: scality/sbom@v2
   with:
     target: myimage.tar
-    target-type: image
+    target_type: image
+```
+
+### Scan image directly from a registry
+
+You can scan container images directly from a registry without downloading them first:
+
+```yaml
+- uses: scality/sbom@v2
+  with:
+    target: docker.io/alpine:3.14
+    target_type: image
 ```
 
 ### Exclude mediatypes for container images
@@ -87,8 +98,8 @@ For images (like those built using Oras) that use custom mediatypes not supporte
 - uses: scality/sbom@v2
   with:
     target: ./images
-    target-type: image
-    exclude-mediatypes: "application/my-configuration+json,text/nginx-config"
+    target_type: image
+    exclude_mediatypes: "application/my-configuration+json,text/nginx-config"
 ```
 
 ### Enable vulnerability scanning
@@ -132,8 +143,8 @@ jobs:
         uses: scality/sbom@v2
         with:
           target: ${{ env.BASE_PATH }}/repo/myrepo
-          target-type: file
-          output-dir: ${{ env.SBOM_PATH }}
+          target_type: file
+          output_dir: ${{ env.SBOM_PATH }}
           
       - name: Download artifacts
         shell: bash
@@ -149,11 +160,11 @@ jobs:
         uses: scality/sbom@v2
         with:
           target: ${{ env.BASE_PATH }}/iso/my.iso
-          target-type: iso
+          target_type: iso
           version: "1.0.0"
-          output-dir: ${{ env.SBOM_PATH }}
+          output_dir: ${{ env.SBOM_PATH }}
           vuln: true
-          vuln-output-format: html
+          vuln_output_format: html
           merge: true
           merge_hierarchical: true
           
@@ -162,6 +173,72 @@ jobs:
         with:
           name: sbom-files
           path: ${{ env.SBOM_PATH }}/*.json
+```
+
+## CLI Usage
+
+The SBOM tool can also be run directly from the command line using environment variables for configuration.
+
+### Install dependencies
+
+```bash
+pip install -r requirements.txt
+```
+
+### Basic CLI commands
+
+```bash
+# Install the required scanners (syft, grype)
+python3 ./src/main.py install
+
+# Scan a target
+python3 ./src/main.py scan
+```
+
+### CLI Examples
+
+Scan a local directory:
+
+```bash
+INPUT_OUTPUT_DIR=/tmp/sbom INPUT_TARGET_TYPE=file INPUT_TARGET=./src \
+  python3 ./src/main.py scan
+```
+
+Scan a container image from a registry:
+
+```bash
+INPUT_OUTPUT_DIR=/tmp/sbom INPUT_TARGET_TYPE=image INPUT_TARGET=docker.io/alpine:3.14 \
+  python3 ./src/main.py scan
+```
+
+Scan an image tarball:
+
+```bash
+INPUT_OUTPUT_DIR=/tmp/sbom INPUT_TARGET_TYPE=image INPUT_TARGET=./myimage.tar \
+  python3 ./src/main.py scan
+```
+
+Scan with vulnerability analysis:
+
+```bash
+INPUT_OUTPUT_DIR=/tmp/sbom INPUT_TARGET_TYPE=file INPUT_TARGET=./src INPUT_VULN=true \
+  python3 ./src/main.py scan
+```
+
+Generate HTML vulnerability report:
+
+```bash
+INPUT_OUTPUT_DIR=/tmp/sbom INPUT_TARGET_TYPE=image INPUT_TARGET=docker.io/alpine:3.14 \
+  INPUT_VULN=true INPUT_VULN_OUTPUT_FORMAT=html \
+  python3 ./src/main.py scan
+```
+
+Scan an ISO file with merging enabled:
+
+```bash
+INPUT_OUTPUT_DIR=/tmp/sbom INPUT_TARGET_TYPE=iso INPUT_TARGET=./my.iso \
+  INPUT_VERSION=1.0.0 INPUT_MERGE=true INPUT_VULN=true \
+  python3 ./src/main.py scan
 ```
 
 ## CycloneDX Metadata
@@ -185,7 +262,7 @@ In the generated SBOM files, you will find CycloneDX metadata. Examples include:
                     "type": "application",
                     "author": "anchore",
                     "name": "syft",
-                    "version": "1.38.0"
+                    "version": "1.39.0"
                 }
             ]
         },
@@ -216,7 +293,7 @@ In the generated SBOM files, you will find CycloneDX metadata. Examples include:
                     "type": "application",
                     "author": "anchore",
                     "name": "syft",
-                    "version": "1.38.0"
+                    "version": "1.39.0"
                 }
             ]
         },
