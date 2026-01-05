@@ -79,6 +79,17 @@ You can generate multiple formats simultaneously by using comma-separated values
     target_type: image
 ```
 
+### Scan image directly from a registry
+
+You can scan container images directly from a registry without downloading them first:
+
+```yaml
+- uses: scality/sbom@v2
+  with:
+    target: docker.io/alpine:3.14
+    target_type: image
+```
+
 ### Exclude mediatypes for container images
 
 For images (like those built using Oras) that use custom mediatypes not supported by Skopeo:
@@ -162,6 +173,72 @@ jobs:
         with:
           name: sbom-files
           path: ${{ env.SBOM_PATH }}/*.json
+```
+
+## CLI Usage
+
+The SBOM tool can also be run directly from the command line using environment variables for configuration.
+
+### Install dependencies
+
+```bash
+pip install -r requirements.txt
+```
+
+### Basic CLI commands
+
+```bash
+# Install the required scanners (syft, grype)
+python3 ./src/main.py install
+
+# Scan a target
+python3 ./src/main.py scan
+```
+
+### CLI Examples
+
+Scan a local directory:
+
+```bash
+INPUT_OUTPUT_DIR=/tmp/sbom INPUT_TARGET_TYPE=file INPUT_TARGET=./src \
+  python3 ./src/main.py scan
+```
+
+Scan a container image from a registry:
+
+```bash
+INPUT_OUTPUT_DIR=/tmp/sbom INPUT_TARGET_TYPE=image INPUT_TARGET=docker.io/alpine:3.14 \
+  python3 ./src/main.py scan
+```
+
+Scan an image tarball:
+
+```bash
+INPUT_OUTPUT_DIR=/tmp/sbom INPUT_TARGET_TYPE=image INPUT_TARGET=./myimage.tar \
+  python3 ./src/main.py scan
+```
+
+Scan with vulnerability analysis:
+
+```bash
+INPUT_OUTPUT_DIR=/tmp/sbom INPUT_TARGET_TYPE=file INPUT_TARGET=./src INPUT_VULN=true \
+  python3 ./src/main.py scan
+```
+
+Generate HTML vulnerability report:
+
+```bash
+INPUT_OUTPUT_DIR=/tmp/sbom INPUT_TARGET_TYPE=image INPUT_TARGET=docker.io/alpine:3.14 \
+  INPUT_VULN=true INPUT_VULN_OUTPUT_FORMAT=html \
+  python3 ./src/main.py scan
+```
+
+Scan an ISO file with merging enabled:
+
+```bash
+INPUT_OUTPUT_DIR=/tmp/sbom INPUT_TARGET_TYPE=iso INPUT_TARGET=./my.iso \
+  INPUT_VERSION=1.0.0 INPUT_MERGE=true INPUT_VULN=true \
+  python3 ./src/main.py scan
 ```
 
 ## CycloneDX Metadata
