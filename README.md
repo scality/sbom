@@ -24,8 +24,8 @@ The main [SBOM action](action.yaml) is responsible for generating SBOMs.
 
 | Parameter            | Description                                                                                 | Default      |
 | -------------------- | ------------------------------------------------------------------------------------------- | ------------ |
-| `grype_version`      | Grype version to use                                                                        | `0.115.0`     |
-| `syft_version`       | Syft version to use                                                                         | `1.46.0`     |
+| `grype_version`      | Grype version to use                                                                        | `0.116.1`     |
+| `syft_version`       | Syft version to use                                                                         | `1.50.0`     |
 | `target`             | The target to scan (path or image)                                                          | `./`         |
 | `target_type`        | Type of target to scan (file, directory, image, iso)                                        | `file`       |
 | `output_format`      | Format of the generated SBOM <br> (cyclonedx-json cyclonedx-xml github-json spdx-json spdx-tag-value syft-json syft-table syft-text template) | `cyclonedx-json` |
@@ -262,7 +262,7 @@ In the generated SBOM files, you will find CycloneDX metadata. Examples include:
                     "type": "application",
                     "author": "anchore",
                     "name": "syft",
-                    "version": "1.46.0"
+                    "version": "1.50.0"
                 }
             ]
         },
@@ -293,7 +293,7 @@ In the generated SBOM files, you will find CycloneDX metadata. Examples include:
                     "type": "application",
                     "author": "anchore",
                     "name": "syft",
-                    "version": "1.46.0"
+                    "version": "1.50.0"
                 }
             ]
         },
