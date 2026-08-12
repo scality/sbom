@@ -1,12 +1,12 @@
 packages:
   syft:
-    default_version: 1.50.0
+    default_version: 1.51.0
     editor: anchore
     artifact: '{package_name}_{version}_linux_amd64.tar.gz'
     binary: syft
     checksums: true
   grype:
-    default_version: 0.116.1
+    default_version: 0.117.0
     editor: anchore
     artifact: '{package_name}_{version}_linux_amd64.tar.gz'
     binary: grype
