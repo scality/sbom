@@ -6,7 +6,7 @@ packages:
     binary: syft
     checksums: true
   grype:
-    default_version: 0.119.0
+    default_version: 0.120.0
     editor: anchore
     artifact: '{package_name}_{version}_linux_amd64.tar.gz'
     binary: grype

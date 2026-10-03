@@ -24,7 +24,7 @@ The main [SBOM action](action.yaml) is responsible for generating SBOMs.
 
 | Parameter            | Description                                                                                 | Default      |
 | -------------------- | ------------------------------------------------------------------------------------------- | ------------ |
-| `grype_version`      | Grype version to use                                                                        | `0.119.0`     |
+| `grype_version`      | Grype version to use                                                                        | `0.120.0`     |
 | `syft_version`       | Syft version to use                                                                         | `1.54.0`     |
 | `target`             | The target to scan (path or image)                                                          | `./`         |
 | `target_type`        | Type of target to scan (file, directory, image, iso)                                        | `file`       |
